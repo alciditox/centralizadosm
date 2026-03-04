@@ -48,7 +48,7 @@
 </div>
 
 <!-- ============ Modals ============= -->
-<form action="#" id="form_bank" method="POST" accept-charset="UTF-8">
+<form action="#" id="form_bank" method="POST" accept-charset="UTF-8" class="needs-validation" novalidate="novalidate">
     <div class="modal fade" id="modal_form_bank" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
@@ -61,27 +61,39 @@
                     <input type="hidden" value="" name="id" id="bank_id"/> 
                     
                     <div class="row">
-                        <div class="col-sm-3">
+                        <div class="col-sm-3 form-group">
                             <label for="codigo" class="col-sm-12"><b>Código*</b></label>
                             <input name="codigo" id="codigo" placeholder="Código" class="form-control" type="text" required>
+                            <div class="invalid-feedback">
+                                Dato Obligatorio
+                            </div>
                         </div>
                         
-                        <div class="col-sm-3">
+                        <div class="col-sm-3 form-group">
                             <label for="nombre" class="col-sm-12"><b>Nombre*</b></label>
                             <input name="nombre" id="nombre" placeholder="Nombre" class="form-control" type="text" required>
+                            <div class="invalid-feedback">
+                                Dato Obligatorio
+                            </div>
                         </div>
                         
-                        <div class="col-sm-3">
+                        <div class="col-sm-3 form-group">
                             <label for="cuenta_contable" class="col-sm-12"><b>Cta. Contable*</b></label>
                             <input name="cuenta_contable" id="cuenta_contable" placeholder="Cuenta Contable" class="form-control" type="number" required>
+                            <div class="invalid-feedback">
+                                Dato Obligatorio
+                            </div>
                         </div>
                         
-                        <div class="col-sm-3">
+                        <div class="col-sm-3 form-group">
                             <label for="status" class="col-sm-12"><b>Estatus*</b></label>
                             <select name="status" id="status" class="form-control select2" required>
                                 <option value="Activo">Activo</option>
                                 <option value="Inactivo">Inactivo</option>
                             </select>
+                            <div class="invalid-feedback">
+                                Dato Obligatorio
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -155,6 +167,16 @@
 
         $('#form_bank').on('submit', function(e) {
             e.preventDefault();
+            
+            var form = $(this)[0];
+            if (form.checkValidity() === false) {
+                e.stopPropagation();
+                $(form).addClass('was-validated');
+                return;
+            }
+            
+            $(form).addClass('was-validated');
+            
             $('#btnSaveBank').text('Guardando...'); //change button text
             $('#btnSaveBank').attr('disabled', true); //set button disable 
 
@@ -164,7 +186,7 @@
             var delay = function(ms) {
                 return new Promise(function(r) {
                     setTimeout(r, ms)
-                })
+                });
             };
             var time = 2000;
             delay(time).then(function() {
