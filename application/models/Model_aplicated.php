@@ -285,8 +285,10 @@ class Model_aplicated extends CI_Model
     public function get_all_collection_banks($postData)
     {
         $this->_get_datatables_query_collection_banks($postData);
-        if ($postData['length'] != -1)
-            $this->db->limit($postData['length'], $postData['start']);
+        if (isset($postData['length']) && $postData['length'] != -1) {
+            $start = isset($postData['start']) ? $postData['start'] : 0;
+            $this->db->limit($postData['length'], $start);
+        }
         $query = $this->db->get();
         return $query->result();
     }
