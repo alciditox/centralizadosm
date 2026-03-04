@@ -243,56 +243,6 @@ class Administrator extends CI_Controller
 		$this->load->view('layout/template', $data);
 	}
 
-	public function menuConfigure($type = null)
-	{
-		//SE VERIFICA PERMISO DE ENTRADA EBN EL MODULO
-		$this->Permissions->call("5");
-
-		$data['menuConfigure'] = $this->model_administrator->menuConfigure();
-
-		$postData = $this->input->post();
-
-		switch ($type) {
-			case 'add':
-				$parent = $postData['parent'];
-				if (empty($parent)) $parent = NULL;
-				$add = [
-					'nombre' 	=> $postData['nombre'],
-					'url' 		=> $postData['url'],
-					'parent' 	=> $parent,
-					'icon' 		=> $postData['fabicon'],
-					'status' 	=> $postData['status'],
-				];
-				$this->parameters->add($add, "menu");
-				$this->session->set_flashdata('success', 'Proceso realizado con exito.');
-				redirect('/administrator/menuConfigure');
-				break;
-
-			case 'edit':
-				$parent = $postData['parent'];
-				if (empty($parent)) $parent = NULL;
-				$add = [
-					'nombre' 	=> $postData['nombre'],
-					'url' 		=> $postData['url'],
-					'parent' 	=> $parent,
-					'icon' 		=> $postData['fabicon'],
-					'status' 	=> $postData['status'],
-				];
-				$this->parameters->edit($add, $postData['id'], "id", "menu");
-
-				$this->session->set_flashdata('success', 'Proceso realizado con exito.');
-				redirect('/administrator/menuConfigure');
-				break;
-
-			default:
-				# code...
-				break;
-		}
-
-		$data['main_content'] = 'administrator/menuConfigure.php';
-		$this->load->view('layout/template', $data);
-	}
-
 	public function rols()
 	{
 		$resp = $this->model_administrator->rols();
