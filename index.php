@@ -62,7 +62,7 @@ $dotenv->safeLoad();
  *
  * NOTE: If you change these, also change the error_reporting() code below
  */
-	define('ENVIRONMENT', getenv('CI_ENV') ?: 'development');
+	define('ENVIRONMENT', isset($_ENV['CI_ENV']) ? $_ENV['CI_ENV'] : 'development');
 
 /*
  *---------------------------------------------------------------

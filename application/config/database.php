@@ -75,10 +75,10 @@ $query_builder = TRUE;
 
 $db['default'] = array(
 	'dsn'	=> '',
-	'hostname' => getenv('DB_HOSTNAME') ?: 'localhost',
-	'username' => getenv('DB_USERNAME') ?: 'root',
-	'password' => getenv('DB_PASSWORD') ?: '',
-	'database' => getenv('DB_DATABASE') ?: 'cobro_centralizado',
+	'hostname' => $_ENV['DB_HOSTNAME'],
+	'username' => $_ENV['DB_USERNAME'],
+	'password' => $_ENV['DB_PASSWORD'],
+	'database' => $_ENV['DB_DATABASE'],
 	'dbdriver' => 'mysqli',
 	'dbprefix' => '',
 	'pconnect' => FALSE,
@@ -97,10 +97,10 @@ $db['default'] = array(
 
 $db['summi_app'] = array(
 	'dsn'	=> '',
-	'hostname' => getenv('DB_SUMMI_HOSTNAME') ?: '190.120.248.81',
-	'username' => getenv('DB_SUMMI_USERNAME') ?: 'administrador',
-	'password' => getenv('DB_SUMMI_PASSWORD') ?: '',
-	'database' => getenv('DB_SUMMI_DATABASE') ?: 'summi_app',
+	'hostname' => $_ENV['DB_SUMMI_HOSTNAME'],
+	'username' => $_ENV['DB_SUMMI_USERNAME'],
+	'password' => $_ENV['DB_SUMMI_PASSWORD'],
+	'database' => $_ENV['DB_SUMMI_DATABASE'],
 	'dbdriver' => 'mysqli',
 	'dbprefix' => '',
 	'pconnect' => FALSE,
@@ -116,3 +116,4 @@ $db['summi_app'] = array(
 	'failover' => array(),
 	'save_queries' => TRUE
 );
+
