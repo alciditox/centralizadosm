@@ -96,12 +96,14 @@ class Collections_aplicated extends CI_Controller
             "data" => $result,
         );
         echo json_encode($output);
+        exit;
     }
 
     public function get_collection_bank($id)
     {
         $data = $this->model_aplicated->get_collection_bank_by_id($id);
         echo json_encode($data);
+        exit;
     }
 
     public function save_collection_bank()
@@ -121,12 +123,14 @@ class Collections_aplicated extends CI_Controller
             $update = $this->model_aplicated->update_collection_bank($id, $data);
             echo json_encode(array("status" => TRUE, "action" => "updated"));
         }
+        exit;
     }
 
     public function delete_collection_bank($id)
     {
         $this->model_aplicated->delete_collection_bank($id);
         echo json_encode(array("status" => TRUE));
+        exit;
     }
 
     public function generate_all($banco)
