@@ -1,6 +1,6 @@
                 <!--  Large Modal -->
 
-                <form class="needs-validation" novalidate="novalidate" method="POST" action="<?= base_url('collections/conciliar'); ?>" accept-charset="UTF-8" enctype="multipart/form-data">
+                <form id="formConciliar" class="needs-validation" novalidate="novalidate" method="POST" action="<?= base_url('collections/conciliar'); ?>" accept-charset="UTF-8" enctype="multipart/form-data">
                     <div class="modal fade modal-conciliar" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
                         <div class="modal-dialog modal-lg">
                             <div class="modal-content">
@@ -45,4 +45,32 @@
                         </div>
                     </div>
                 </form>
+                
+<script>
+    $(document).ready(function() {
+        $('#formConciliar').submit(function(e) {
+            var form = this;
+            if (form.checkValidity() === false) {
+                e.stopPropagation();
+            } else {
+                // Bloquear el botón para evitar más de un clic
+                $(this).find('button[type="submit"]').prop('disabled', true).text('Conciliando...');
+                
+                // Mostrar ventana de carga
+                $('body').loadingModal({
+                    text: 'Estamos procesando su informaci&oacute;n<br> En breve estar&aacute; listo<br> Por favor no recargar la pagina'
+                });
+                var delay = function(ms) {
+                    return new Promise(function(r) {
+                        setTimeout(r, ms)
+                    });
+                };
+                var time = 2000;
+                delay(time).then(function() {
+                    $('body').loadingModal('animation', 'threeBounce');
+                });
+            }
+        });
+    });
+</script>
                 <!--  Small Modal -->

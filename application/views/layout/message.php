@@ -39,7 +39,7 @@
                     <button class="close" type="button" data-dismiss="modal"><span>&times;</span></button>
                 </div>
                 <div class="modal-body">
-                    <p><?= htmlspecialchars($modal, ENT_QUOTES) ?></p>
+                    <?= $modal ?>
                 </div>
                 <div class="modal-footer">
                     <button class="btn btn-info" data-dismiss="modal">Cerrar</button>

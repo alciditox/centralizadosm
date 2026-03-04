@@ -136,21 +136,42 @@ class Collections extends CI_Controller
 		// -----------------------------
 		// Modal HTML con estadísticas
 		// -----------------------------
-		$msn = '<table border="1" cellpadding="6" cellspacing="0" style="border-collapse:collapse; width:100%;">';
-		$msn .= '<thead style="background-color:#f2f2f2;">';
-		$msn .= '<tr><th>Métrica</th><th>Valor</th></tr>';
-		$msn .= '</thead><tbody>';
+		
+		$nombres_metricas = [
+		    'archivo_total'         => 'Registros Totales en Archivo',
+		    'encontrados'           => 'Registros Encontrados (Coincidencias)',
+		    'actualizados'          => 'Registros Actualizados',
+		    'total_updates_invoice' => 'Facturas (Invoices) Afectadas',
+		    'ya_conciliados'        => 'Registros Previamente Conciliados',
+		    'no_encontrados'        => 'Registros No Encontrados'
+		];
 
+		$msn = '<div class="row text-center">';
 		foreach ($conciliar as $k => $v) {
 			if (is_array($v)) continue;
-			$msn .= "<tr><td>{$k}</td><td>{$v}</td></tr>";
+			
+			$nombre_amigable = isset($nombres_metricas[$k]) ? $nombres_metricas[$k] : ucfirst(str_replace('_', ' ', $k));
+			
+			// Si el valor es mayor a cero agregar clase text-primary, sino text-muted
+			$text_class = ($v > 0) ? 'text-primary' : 'text-muted';
+			
+			$msn .= '
+			<div class="col-md-4 mb-3">
+			    <div class="card card-body p-3 shadow-sm border-0 d-flex flex-column justify-content-center align-items-center">
+			        <span class="font-weight-semibold text-muted mb-2 text-uppercase" style="font-size: 0.75rem; letter-spacing: 0.5px;">' . $nombre_amigable . '</span>
+			        <span class="font-weight-bold ' . $text_class . '" style="font-size: 1.5rem;">' . $v . '</span>
+			    </div>
+			</div>';
 		}
+		$msn .= '</div>';
 
 		if (!empty($conciliar['errores'])) {
-			$msn .= '<tr><td>Errores</td><td>' . implode("<br>", $conciliar['errores']) . '</td></tr>';
+			$msn .= '<div class="alert alert-danger mt-3 mb-0 border-0 shadow-sm">';
+			$msn .= '<h6 class="alert-heading font-weight-bold"><i class="fal fa-exclamation-triangle"></i> Errores Detectados:</h6>';
+			$msn .= '<hr class="mt-1 mb-2">';
+			$msn .= '<ul class="mb-0 pl-3"><li>' . implode("</li><li>", $conciliar['errores']) . '</li></ul>';
+			$msn .= '</div>';
 		}
-
-		$msn .= '</tbody></table>';
 
 		// Marcar domicialiation como conciliado
 		$this->parameters->edit(["status" => "Conciliado"], $postData['id'], "id", "domiciliations");
