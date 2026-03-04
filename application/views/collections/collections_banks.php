@@ -181,12 +181,11 @@
                     if(data.status) {
                         $('#modal_form_bank').modal('hide');
                         table.ajax.reload(null, false);
-                        Swal.fire({
-                            icon: 'success',
-                            title: '¡Éxito!',
-                            text: 'El banco ha sido guardado correctamente.',
-                            showConfirmButton: false,
-                            timer: 1500
+                        toastr["success"]("El banco ha sido guardado correctamente.", "Mensaje", {
+                            progressBar: 100,
+                            showMethod: "slideDown",
+                            hideMethod: "slideUp",
+                            timeOut: 3000
                         });
                     }
                     $('#btnSaveBank').text('Guardar');
@@ -194,10 +193,11 @@
                 },
                 error: function(jqXHR, textStatus, errorThrown) {
                     $('body').loadingModal('destroy');
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Oops...',
-                        text: 'Error al agregar / modificar datos'
+                    toastr["error"]("Error al agregar / modificar datos", "Mensaje", {
+                        progressBar: 100,
+                        showMethod: "slideDown",
+                        hideMethod: "slideUp",
+                        timeOut: 3000
                     });
                     $('#btnSaveBank').text('Guardar');
                     $('#btnSaveBank').attr('disabled', false); 
@@ -213,7 +213,7 @@
         $('.form-group').removeClass('has-error'); 
         $('.help-block').empty(); 
         $('#modal_form_bank').modal('show'); 
-        $('#modal_title').text('Agregar Banco'); 
+        $('#modal_title').html('Banco <i class="fal fa-arrow-alt-circle-right"></i>'); 
     }
 
     function editBank(id) {
@@ -233,39 +233,41 @@
                 $('[name="status"]').val(data.status);
                 
                 $('#modal_form_bank').modal('show'); 
-                $('#modal_title').text('Editar Banco'); 
+                $('#modal_title').html('Banco <i class="fal fa-arrow-alt-circle-right"></i>'); 
             },
             error: function(jqXHR, textStatus, errorThrown) {
-                Swal.fire('Error', 'Error al obtener datos', 'error');
+                toastr["error"]("Error al obtener datos", "Mensaje", {
+                    timeOut: 3000
+                });
             }
         });
     }
 
     function deleteBank(id) {
-        Swal.fire({
-            title: '¿Estás seguro?',
-            text: "¡No podrás revertir esto!",
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#3085d6',
-            cancelButtonColor: '#d33',
-            confirmButtonText: 'Sí, bórralo!'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                $.ajax({
-                    url : "<?php echo site_url('collections_aplicated/delete_collection_bank')?>/" + id,
-                    type: "POST",
-                    dataType: "JSON",
-                    success: function(data) {
-                        $('#modal_form_bank').modal('hide');
-                        table.ajax.reload(null, false);
-                        Swal.fire('Eliminado!', 'El banco ha sido eliminado.', 'success');
-                    },
-                    error: function(jqXHR, textStatus, errorThrown) {
-                        Swal.fire('Error', 'Error al borrar el dato', 'error');
-                    }
-                });
-            }
-        });
+        if (confirm("¿Estás seguro? ¡No podrás revertir esto!")) {
+            $.ajax({
+                url : "<?php echo site_url('collections_aplicated/delete_collection_bank')?>/" + id,
+                type: "POST",
+                dataType: "JSON",
+                success: function(data) {
+                    $('#modal_form_bank').modal('hide');
+                    table.ajax.reload(null, false);
+                    toastr["success"]("El banco ha sido eliminado.", "Mensaje", {
+                        progressBar: 100,
+                        showMethod: "slideDown",
+                        hideMethod: "slideUp",
+                        timeOut: 3000
+                    });
+                },
+                error: function(jqXHR, textStatus, errorThrown) {
+                    toastr["error"]("Error al borrar el dato", "Mensaje", {
+                        progressBar: 100,
+                        showMethod: "slideDown",
+                        hideMethod: "slideUp",
+                        timeOut: 3000
+                    });
+                }
+            });
+        }
     }
 </script>
