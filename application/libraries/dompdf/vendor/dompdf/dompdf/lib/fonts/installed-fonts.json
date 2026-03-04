@@ -1,0 +1,25 @@
+{
+    "nunito": {
+        "italic": "C:\\xampp\\htdocs\\cobro_centralizado\\application\\libraries\\dompdf\\vendor\\dompdf\\dompdf\/lib\/fonts\/nunito_italic_73424994d9a0d36f6a9693c475fb71f3",
+        "300": "C:\\xampp\\htdocs\\cobro_centralizado\\application\\libraries\\dompdf\\vendor\\dompdf\\dompdf\/lib\/fonts\/nunito_300_94c0e0cc951325d5fe102516071deddc",
+        "normal": "C:\\xampp\\htdocs\\cobro_centralizado\\application\\libraries\\dompdf\\vendor\\dompdf\\dompdf\/lib\/fonts\/nunito_normal_a79d5d478ff144acb132596b30109135",
+        "600": "C:\\xampp\\htdocs\\cobro_centralizado\\application\\libraries\\dompdf\\vendor\\dompdf\\dompdf\/lib\/fonts\/nunito_600_2ca724e4e1a9f8e2ed8bb752920a8be4",
+        "bold": "C:\\xampp\\htdocs\\cobro_centralizado\\application\\libraries\\dompdf\\vendor\\dompdf\\dompdf\/lib\/fonts\/nunito_bold_00e56b884f6187001db248b275d34500",
+        "800": "C:\\xampp\\htdocs\\cobro_centralizado\\application\\libraries\\dompdf\\vendor\\dompdf\\dompdf\/lib\/fonts\/nunito_800_5a6a0e09ab1d4c2019b0beffe8e7afb3",
+        "900": "nunito_900_95f298ee457c4c1b7e0f30d7ef8b03f7"
+    },
+    "iconsmind": {
+        "normal": "iconsmind_normal_097a668fbb3d6682982f5efd2200c2f0"
+    },
+    "font awesome 5 brands": {
+        "normal": "font_awesome_5_brands_normal_6684db1ae63cb8d028f770922eda8ace"
+    },
+    "font awesome 5 duotone": {
+        "900": "font_awesome_5_duotone_900_549cf1b3900880bcead377cf5163e9c7"
+    },
+    "font awesome 5 pro": {
+        "300": "C:\\xampp\\htdocs\\bancos\\application\\libraries\\dompdf\\vendor\\dompdf\\dompdf\/lib\/fonts\/font_awesome_5_pro_300_1b28ac9c3d57cb9862af5eece1a2e605",
+        "normal": "C:\\xampp\\htdocs\\bancos\\application\\libraries\\dompdf\\vendor\\dompdf\\dompdf\/lib\/fonts\/font_awesome_5_pro_normal_c64edf2e535fc104f5e033bbe970a4f2",
+        "900": "font_awesome_5_pro_900_2916338c09c6cbe0f7f73da91fbb0a76"
+    }
+}

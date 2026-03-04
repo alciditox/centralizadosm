@@ -1,0 +1,25 @@
+<!doctype html>
+<html>
+<head>
+    <link rel="stylesheet" href="css/jquery.loadingModal.min.css">
+</head>
+<body>
+
+
+    <button onclick="showModal();">Show loading modal</button>
+
+
+<script src="http://code.jquery.com/jquery-3.1.1.slim.min.js"></script>
+<script src="js/jquery.loadingModal.min.js"></script>
+<script>
+    function showModal() {
+        $('body').loadingModal({text: 'Showing loader animations...'});
+        var delay = function(ms){ return new Promise(function(r) { setTimeout(r, ms) }) };
+        var time = 2000;
+        delay(time)
+                .then(function() { $('body').loadingModal('animation', 'spinner'); });
+    }
+
+</script>
+</body>
+</html>
