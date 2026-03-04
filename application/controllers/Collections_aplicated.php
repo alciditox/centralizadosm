@@ -53,6 +53,82 @@ class Collections_aplicated extends CI_Controller
         redirect('collections_aplicated/generate');
     }
 
+    // ==========================================
+    // MODULE: collections_banks
+    // ==========================================
+
+    public function collections_banks()
+    {
+        $data['main_content'] = 'collections/collections_banks.php';
+        $this->load->view('layout/template', $data);
+    }
+
+    public function get_collections_banks_ajax()
+    {
+        $postData = $this->input->post();
+        $data = $this->model_aplicated->get_all_collection_banks($postData);
+        $result = array();
+        foreach ($data as $bank) {
+            $row = array();
+            $row[] = $bank->codigo;
+            $row[] = $bank->nombre;
+            $row[] = $bank->cuenta_contable;
+            
+            $status_badge = ($bank->status == 'Activo') ? '<span class="badge badge-success">Activo</span>' : '<span class="badge badge-danger">Inactivo</span>';
+            $row[] = $status_badge;
+            
+            $actions = '
+                <button type="button" class="btn btn-primary btn-sm btn-icon" onclick="editBank('.$bank->id.')">
+                    <span class="ul-btn__icon"><i class="fal fa-edit"></i></span>
+                </button>
+                <button type="button" class="btn btn-danger btn-sm btn-icon" onclick="deleteBank('.$bank->id.')">
+                    <span class="ul-btn__icon"><i class="fal fa-trash-alt"></i></span>
+                </button>
+            ';
+            $row[] = $actions;
+            $result[] = $row;
+        }
+
+        $output = array(
+            "draw" => isset($postData['draw']) ? intval($postData['draw']) : 0,
+            "recordsTotal" => $this->model_aplicated->count_all_collection_banks(),
+            "recordsFiltered" => $this->model_aplicated->count_filtered_collection_banks($postData),
+            "data" => $result,
+        );
+        echo json_encode($output);
+    }
+
+    public function get_collection_bank($id)
+    {
+        $data = $this->model_aplicated->get_collection_bank_by_id($id);
+        echo json_encode($data);
+    }
+
+    public function save_collection_bank()
+    {
+        $id = $this->input->post('id');
+        $data = array(
+            'codigo' => $this->input->post('codigo'),
+            'nombre' => $this->input->post('nombre'),
+            'cuenta_contable' => $this->input->post('cuenta_contable'),
+            'status' => $this->input->post('status') ? $this->input->post('status') : 'Activo',
+        );
+
+        if (empty($id)) {
+            $insert = $this->model_aplicated->insert_collection_bank($data);
+            echo json_encode(array("status" => TRUE, "action" => "inserted"));
+        } else {
+            $update = $this->model_aplicated->update_collection_bank($id, $data);
+            echo json_encode(array("status" => TRUE, "action" => "updated"));
+        }
+    }
+
+    public function delete_collection_bank($id)
+    {
+        $this->model_aplicated->delete_collection_bank($id);
+        echo json_encode(array("status" => TRUE));
+    }
+
     public function generate_all($banco)
     {
         //$data['dashboard'] = $this->model_collections->cobranza_generate($banco);

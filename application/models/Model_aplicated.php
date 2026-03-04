@@ -65,6 +65,8 @@ class Model_aplicated extends CI_Model
     public function bancos()
     {
         $this->db->from("cobranza_bancos");
+        $this->db->where("delete_at IS NULL");
+        $this->db->where("status", "Activo");
         $query = $this->db->get();
         return $query->result();
     }
@@ -243,28 +245,91 @@ class Model_aplicated extends CI_Model
         return implode("\n", $errores);
     }
 
-    /*public function crear_reporte()
+    // ==========================================
+    // MODULE: collections_banks
+    // ==========================================
+    
+    var $table_bancos = 'cobranza_bancos';
+    var $column_order_bancos = array('id', 'codigo', 'nombre', 'cuenta_contable', 'status'); //set column field database for datatable orderable
+    var $column_search_bancos = array('id', 'codigo', 'nombre', 'cuenta_contable', 'status'); //set column field database for datatable searchable 
+    var $order_bancos = array('id' => 'desc'); // default order 
+
+    private function _get_datatables_query_collection_banks($postData)
     {
-        $this->db->from("cobranza_aplicated");
-        $this->db->where("tipo", "Credicard");
+        $this->db->from($this->table_bancos);
+        $this->db->where('delete_at IS NULL');
+
+        $i = 0;
+        foreach ($this->column_search_bancos as $item) {
+            if (isset($postData['search']['value']) && !empty($postData['search']['value'])) {
+                if ($i === 0) {
+                    $this->db->group_start();
+                    $this->db->like($item, $postData['search']['value']);
+                } else {
+                    $this->db->or_like($item, $postData['search']['value']);
+                }
+                if (count($this->column_search_bancos) - 1 == $i)
+                    $this->db->group_end();
+            }
+            $i++;
+        }
+
+        if (isset($postData['order'])) {
+            $this->db->order_by($this->column_order_bancos[$postData['order']['0']['column']], $postData['order']['0']['dir']);
+        } else if (isset($this->order_bancos)) {
+            $order = $this->order_bancos;
+            $this->db->order_by(key($order), $order[key($order)]);
+        }
+    }
+
+    public function get_all_collection_banks($postData)
+    {
+        $this->_get_datatables_query_collection_banks($postData);
+        if ($postData['length'] != -1)
+            $this->db->limit($postData['length'], $postData['start']);
         $query = $this->db->get();
         return $query->result();
-    }*/
+    }
 
-    /*public function verificar($concatenar, $fecha)
+    public function count_filtered_collection_banks($postData)
     {
-        $this->db->select('*');
-        $this->db->from('cobranza_aplicated');
-        $this->db->where("tipo", "Reporte");
-        $this->db->where("concatenar", $concatenar);
-        $this->db->where("fecha", $fecha);
-        $this->db->limit(1);
+        $this->_get_datatables_query_collection_banks($postData);
         $query = $this->db->get();
+        return $query->num_rows();
+    }
 
-        if ($query->num_rows() == 1) {
-            return true;
-        } else {
-            return false;
-        }
-    }*/
+    public function count_all_collection_banks()
+    {
+        $this->db->from($this->table_bancos);
+        $this->db->where('delete_at IS NULL');
+        return $this->db->count_all_results();
+    }
+
+    public function insert_collection_bank($data)
+    {
+        $this->db->insert($this->table_bancos, $data);
+        return $this->db->insert_id();
+    }
+
+    public function update_collection_bank($id, $data)
+    {
+        $this->db->where('id', $id);
+        $this->db->update($this->table_bancos, $data);
+        return $this->db->affected_rows();
+    }
+
+    public function delete_collection_bank($id)
+    {
+        $this->db->where('id', $id);
+        $this->db->update($this->table_bancos, array('delete_at' => date('Y-m-d H:i:s')));
+        return $this->db->affected_rows();
+    }
+
+    public function get_collection_bank_by_id($id)
+    {
+        $this->db->from($this->table_bancos);
+        $this->db->where('id', $id);
+        $query = $this->db->get();
+        return $query->row();
+    }
 }
