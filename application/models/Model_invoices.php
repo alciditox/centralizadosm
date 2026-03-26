@@ -181,6 +181,10 @@ class Model_invoices extends CI_Model
 
 	public function insert_in_invoices($postData)
 	{
+		// Aumentar el límite de memoria dinámica para procesamiento masivo
+		ini_set('memory_limit', '1024M');
+		ini_set('max_execution_time', '600');
+
 		// 1) Último día del mes y formato YYYY-MM
 		$last_day   = date('Y-m-t', strtotime($postData['fecha_generado']));
 		$year_month = date('Y-m', strtotime($postData['fecha_generado']));
@@ -195,23 +199,33 @@ class Model_invoices extends CI_Model
 			];
 		}
 
-		// 3) Crear array de claves únicas: "afiliado-nropos"
-		$keys = array_map(function ($c) {
-			return $c['afiliado'] . '-' . $c['nropos'];
-		}, $contracts);
+		// 3) Verificar existencia dividiendo en lotes
+		$chunkSize = 1000;
+		$contracts_chunks = array_chunk($contracts, $chunkSize);
 
-		// Escapar para SQL
-		$keys = array_map(function ($v) {
-			return $this->db->escape_str($v);
-		}, $keys);
+		$exists = false;
 
-		// 4) Verificar existencia en **una sola consulta**
-		$this->db->select('1');
-		$this->db->from('invoices');
-		$this->db->where("CONCAT(afiliado,'-',nropos) IN ('" . implode("','", $keys) . "')", null, false);
-		$this->db->like('fecha_mes_cobro', $year_month . '-', 'after');
-		$this->db->limit(1);
-		$exists = ($this->db->count_all_results() > 0);
+		foreach ($contracts_chunks as $chunk) {
+			$keys = array_map(function ($c) {
+				return $c['afiliado'] . '-' . $c['nropos'];
+			}, $chunk);
+
+			// Escapar para SQL
+			$keys = array_map(function ($v) {
+				return $this->db->escape_str($v);
+			}, $keys);
+
+			$this->db->select('1');
+			$this->db->from('invoices');
+			$this->db->where("CONCAT(afiliado,'-',nropos) IN ('" . implode("','", $keys) . "')", null, false);
+			$this->db->like('fecha_mes_cobro', $year_month . '-', 'after');
+			$this->db->limit(1);
+
+			if ($this->db->count_all_results() > 0) {
+				$exists = true;
+				break;
+			}
+		}
 
 		if ($exists) {
 			return [
@@ -220,35 +234,39 @@ class Model_invoices extends CI_Model
 			];
 		}
 
-		// 5) Preparar batch de inserción
-		$batch = [];
-		foreach ($contracts as $c) {
-			$cuota = ($c['type_invoice'] === 'D') ? $c['cuota'] * 30 : $c['cuota'];
+		// 5) Preparar batch de inserción por bloques y liberar memoria
+		$total_inserted = 0;
+		foreach ($contracts_chunks as $chunk) {
+			$batch = [];
+			foreach ($chunk as $c) {
+				$cuota = ($c['type_invoice'] === 'D') ? $c['cuota'] * 30 : $c['cuota'];
 
-			$batch[] = [
-				'contract_id'      => $c['contrato'],
-				'banco'            => $c['bank_id'],
-				'razon'            => $c['razon'],
-				'cuenta'           => $c['cuenta'],
-				'rif'              => $c['rif'],
-				'periodicidad'     => $c['type_invoice'],
-				'afiliado'         => $c['afiliado'],
-				'nropos'           => $c['nropos'],
-				'cuota'            => $cuota,
-				'residuo'          => $cuota,
-				'fecha_mes_cobro'  => $last_day,
-			];
-		}
+				$batch[] = [
+					'contract_id'      => $c['contrato'],
+					'banco'            => $c['bank_id'],
+					'razon'            => $c['razon'],
+					'cuenta'           => $c['cuenta'],
+					'rif'              => $c['rif'],
+					'periodicidad'     => $c['type_invoice'],
+					'afiliado'         => $c['afiliado'],
+					'nropos'           => $c['nropos'],
+					'cuota'            => $cuota,
+					'residuo'          => $cuota,
+					'fecha_mes_cobro'  => $last_day,
+				];
+			}
 
-		// 6) Insertar batch
-		if (!empty($batch)) {
-			$this->db->insert_batch('invoices', $batch);
+			// 6) Insertar batch
+			if (!empty($batch)) {
+				$this->db->insert_batch('invoices', $batch);
+				$total_inserted += count($batch);
+			}
 		}
 
 		return [
 			'status'  => 'success',
-			'message' => "Se generaron " . count($batch) . " cobros correctamente.",
-			'count'   => count($batch)
+			'message' => "Se generaron " . $total_inserted . " cobros correctamente.",
+			'count'   => $total_inserted
 		];
 	}
 
