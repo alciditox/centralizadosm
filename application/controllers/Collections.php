@@ -43,7 +43,7 @@ class Collections extends CI_Controller
 		// 1. DATOS DEL BANCO
 		///////////////////////////////////////////////
 		$bank_api = $this->model_apis->banks($postData['banco']);
-		$basePath = "./Storage/domiciliations/" . $bank_api['bank_code'] . "/";
+		$basePath = FCPATH . "Storage/domiciliations/" . $bank_api['bank_code'] . "/";
 
 		$recivedPath = $basePath . "recived/";
 		$sentPath    = $basePath . "create/";
