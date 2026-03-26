@@ -74,6 +74,11 @@ class Model_apis extends CI_Model
         return $this->call_api("Banks/$bank_id");
     }
 
+    public function contractDetailCrm($contract_id = null)
+    {
+        return $this->call_api("ContractDetailCrm/$contract_id");
+    }
+
     /**
      * Obtiene contratos domiciliados según banco
      */

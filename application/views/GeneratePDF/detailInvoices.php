@@ -25,143 +25,138 @@ $wcon = $ci->parameters->webConfigurations();
     $base64 = 'data:image/' . $type . ';base64,' . base64_encode($data);
     ?>
 
-    <img src="<?= $base64 ?>">
-
     <style>
         * {
-            font-size: x-small;
-        }
-
-        th {
-            background-color: #f7f7f7;
-            border-color: #959594;
-            border-style: solid;
-            border-width: 1px;
-            text-align: center;
-            font-size: 1.2em;
-        }
-
-        td {
-            border-color: #959594;
-            border-style: solid;
-            border-width: 1px;
-            text-align: center;
-            font-size: 1.2em;
+            font-family: 'Nunito', sans-serif;
+            font-size: 13px;
+            color: #000;
         }
 
         table {
             border-collapse: collapse;
+            width: 100%;
         }
 
-        /* Para sobrescribir lo que está en div-table.css */
-        .divTableCell,
-        .divTableHead {
-            padding: 0px !important;
-            border: 0px !important;
+        th {
+            font-weight: bold;
+            text-align: center;
+            padding: 8px 5px;
+        }
+
+        td {
+            text-align: center;
+            padding: 5px;
+        }
+        
+        .text-left { text-align: left; }
+        .text-right { text-align: right; }
+        .text-center { text-align: center; }
+        .font-bold { font-weight: bold; }
+        
+        .header-table td { padding: 0; }
+        .info-table td { padding: 2px 0; }
+        
+        .resumen-table th, .resumen-table td {
+            font-size: 10px;
         }
     </style>
 
-    <h1><?php echo $api['business_name']; ?></h1>
+    <table class="header-table" style="margin-bottom: 30px;">
+        <tr>
+            <td class="text-left" style="width: 50%;">
+                <img src="<?= $base64 ?>" style="width: 250px;">
+            </td>
+            <td class="text-right" style="width: 50%; padding-top: 15px;">
+                <a href="https://sunmivzla.com/" style="color: #0000ee; text-decoration: underline;">www.sunmivzla.com</a><br>
+            </td>
+        </tr>
+    </table>
 
+    <?php $primer_contrato = !empty($contratos) ? $contratos[0] : null; ?>
 
-    <!-- end of row-->
-    <div class="row mb-4">
-        <div class="col-md-6 mb-3">
-            <div class="card text-left">
-                <div class="card-body">
-                    <h4 class="card-title mb-3">Datos Cliente</h4>
-
-                    <div class="table-responsive">
-                        <table class="display table table-striped table-bordered" id="feature_disable_table" style="width:100%">
-                            <thead>
-                                <tr>
-                                    <th scope="col">Cliente</th>
-                                    <th scope="col">Rif</th>
-                                    <th scope="col">Nombre</th>
-                                    <th scope="col"></th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td><?php echo $api['id']; ?></td>
-                                    <td><?php echo $api['rif']; ?></td>
-                                    <td><?php echo $api['business_name']; ?></td>
-                                    <td></td>
-                                </tr>
-                            </tbody>
-                            <thead>
-                                <tr>
-                                    <th scope="col">Fecha Registro</th>
-                                    <th scope="col">Email</th>
-                                    <th scope="col">Telefono</th>
-                                    <th scope="col">Movil</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td><?php echo $api['created_at']; ?></td>
-                                    <td><?php echo $api['email']; ?></td>
-                                    <td><?php echo $api['telephone']; ?></td>
-                                    <td><?php echo $api['mobile']; ?></td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-
+    <table class="info-table" style="margin-bottom: 40px;">
+        <tr>
+            <td class="text-left" style="width: 60%; vertical-align: top;">
+                <div style="font-size: 19px; margin-bottom: 5px;">Cliente:</div>
+                <div><?= isset($api['rif']) ? $api['rif'] : '' ?></div>
+                <div style="text-transform: uppercase;"><?= isset($api['business_name']) ? $api['business_name'] : '' ?></div>
+                <div style="max-width: 300px; text-transform: uppercase;">
+                    <?= !empty($api['address']) ? $api['address'] : (!empty($api['direccion']) ? $api['direccion'] : '') ?>
                 </div>
-            </div>
-        </div>
-
-    </div>
-    <!-- end of row-->
-
-
-
-    <!-- end of row-->
-    <div class="row mb-4">
-        <div class="col-md-6 mb-3">
-            <div class="card text-left">
-                <div class="card-body">
-                    <h4 class="card-title mb-3">Contratos</h4>
-
-                    <div class="table-responsive">
-                        <table class="display table table-striped table-bordered" id="feature_disable_table" style="width:100%">
-                            <thead>
-                                <tr>
-                                    <th scope="col">Contrato</th>
-                                    <th scope="col">Cuenta</th>
-                                    <th scope="col">Afiliado</th>
-                                    <th scope="col">Pos</th>
-                                    <th scope="col">Cuota</th>
-                                    <th scope="col">Faltante</th>
-                            </thead>
-                            <tbody>
-                                <?php foreach (($contratos ? $contratos : array()) as $c) { ?>
-                                    <tr>
-                                        <td><?= str_pad($c['contract_id'], 8, "0", STR_PAD_LEFT);
-                                            ?></td>
-                                        <td><?= $c['cuenta'] ?></td>
-                                        <td><?= $c['afiliado'] ?></td>
-                                        <td><?= $c['nropos'] ?></td>
-                                        <td><?= $c['cuota'] ?></td>
-                                        <td><?= $c['residuo'] ?></td>
-                                    </tr>
-                                <?php } ?>
-                            </tbody>
-                        </table>
-                    </div>
-
+                <div><?= !empty($api['mobile']) ? (strpos($api['mobile'], '+') === 0 ? $api['mobile'] : '+58 ' . $api['mobile']) : (!empty($api['telephone']) ? $api['telephone'] : '') ?></div>
+            </td>
+            <td class="text-left" style="width: 40%; vertical-align: top; padding-left: 20px;">
+                <div style="margin-top: 25px;">
+                    <b>Modelo:</b> <?= isset($contratoDetails['modelo']) ? $contratoDetails['modelo'] : '' ?><br>
+                    <b>Serial:</b> <?= isset($contratoDetails['serialPos']) ? $contratoDetails['serialPos'] : '' ?><br>
+                    <b>Plan:</b> <?= isset($contratoDetails['plan']) ? $contratoDetails['plan'] : '' ?> <br>
+                    <?php 
+                        $tipo_pago_label = '';
+                        if (isset($contratoDetails['tipo_pago'])) {
+                            $mapa_tipos = ['D' => 'Diario', 'M' => 'Mensual', 'Q' => 'Quincenal'];
+                            $tipo_pago_label = isset($mapa_tipos[$contratoDetails['tipo_pago']]) ? $mapa_tipos[$contratoDetails['tipo_pago']] : $contratoDetails['tipo_pago'];
+                        }
+                    ?>
+                    <b>Tipo:</b> <?= $tipo_pago_label ?> <br>
+                    <b>Fecha:</b> <?= date('d M. Y') ?>
                 </div>
-            </div>
-        </div>
+            </td>
+        </tr>
+    </table>
 
+    <div class="text-center font-bold" style="font-size: 18px; margin-bottom: 20px;">
+        Resumen de Movimientos
     </div>
-    <!-- end of row-->
 
+    <table class="resumen-table">
+        <thead>
+            <tr>
+                <th>Concepto</th>
+                <th>Fecha</th>
+                <th>Cargos</th>
+                <th>Descripción de Pago</th>
+                <th>Fecha de Pago</th>
+                <th>Abonos</th>
+                <th>Balance</th>
+            </tr>
+        </thead>
+        <tbody>
 
-    <!-- DataTables  & Plugins -->
-    <script src="<?php echo base_url('assets/') ?>dist-assets/js/plugins/datatables.min.js"></script>
-    <script src="<?php echo base_url('assets/') ?>dist-assets/js/scripts/datatables.script.min.js"></script>
+            <?php 
+            $total_cargos = 0;
+            $total_abonos = 0;
+            $balance = 0;
+            foreach (($contratos ? $contratos : array()) as $c) { 
+                $cargo = isset($c['cuota']) ? (float)$c['cuota'] : 0;
+                $abono = $cargo - (isset($c['residuo']) ? (float)$c['residuo'] : 0);
+                $balance += ($cargo - $abono);
+                
+                $total_cargos += $cargo;
+                $total_abonos += $abono;
+                
+                $descripcion = "Domiciliación";
+                $fecha_generado = isset($c['fecha_mes_cobro']) ? date('d-m-Y', strtotime($c['fecha_mes_cobro'])) : date('d-m-Y');
+                $fecha_pago = (isset($c['fecha_conciliado']) && !empty($c['fecha_conciliado'])) ? date('d-m-Y', strtotime($c['fecha_conciliado'])) : '----';
+            ?>
+            <tr>
+                <td>Cargo - No. <?= isset($c['id']) ? $c['id'] : (isset($c['contract_id']) ? $c['contract_id'] : '') ?></td>
+                <td><?= $fecha_generado ?></td>
+                <td><?= $cargo > 0 ? $cargo : '' ?></td>
+                <td><?= $descripcion ?></td>
+                <td><?= $fecha_pago ?></td>
+                <td><?= $abono > 0 ? $abono . (isset($c['tasa']) ? ' (Bs. ' . number_format($abono * (float)$c['tasa'], 2) . ')' : '') : '----' ?></td>
+                <td><?= number_format($balance, 2) ?></td>
+            </tr>
+            <?php } ?>
+            <tr>
+                <td class="font-bold" colspan="2" style="padding-top: 15px;">Totales</td>
+                <td class="font-bold" style="padding-top: 15px;">$ <?= number_format($total_cargos, 2) ?></td>
+                <td colspan="2" style="padding-top: 15px;"></td>
+                <td class="font-bold" style="padding-top: 15px;">$ <?= number_format($total_abonos, 2) ?></td>
+                <td class="font-bold" style="padding-top: 15px;">$ <?= number_format($balance, 2) ?></td>
+            </tr>
+        </tbody>
+    </table>
 
 </body>
 

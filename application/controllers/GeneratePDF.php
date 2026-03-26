@@ -32,6 +32,7 @@ class GeneratePDF extends CI_Controller
 		$data = [
 			'api'          => $this->model_apis->CustomerCrmId($customer_id),
 			'contratos'    => $this->model_invoices->detailInvoices($contrato),
+			'contratoDetails'    => $this->model_apis->contractDetailCrm($contrato),
 		];
 		$html = $this->load->view('GeneratePDF/detailInvoices', $data, true);
 		$this->pdf->createPDF($html, 'notaEntrega', false);
