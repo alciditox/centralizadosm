@@ -19,7 +19,7 @@ $wcon = $ci->parameters->webConfigurations();
 
 <body>
     <?php
-    $path = FCPATH . 'assets/dist-assets/images/local/front.png';
+    $path = FCPATH . 'assets/dist-assets/images/local/logo-pdf.png';
     $type = pathinfo($path, PATHINFO_EXTENSION);
     $data = file_get_contents($path);
     $base64 = 'data:image/' . $type . ';base64,' . base64_encode($data);

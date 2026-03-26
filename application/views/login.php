@@ -48,11 +48,21 @@ $wcon = $ci->parameters->webConfigurations();
             align-items: center;
             height: 100%;
         }
+
+        .btn-info, .btn-outline-info {
+            border-color: #ec652c;
+        }
+
+        .btn-info {
+            color: #fff;
+            background-color: #ec652c;
+        border-color: #ec652c;
+    }
     </style>
 </head>
 
 <form class="needs-validation" novalidate="novalidate" method="POST" action="<?php echo base_url('login/user_login_process') ?>">
-    <div class="auth-layout-wrap" style="background-image: url(<?php echo base_url('assets/') ?>dist-assets/images/local/photo-wide-4.png)">
+    <div class="auth-layout-wrap" >
         <div class="auth-content">
             <div class="card o-hidden">
                 <div class="row">
@@ -91,17 +101,11 @@ $wcon = $ci->parameters->webConfigurations();
 
                                 <button class="btn btn-rounded btn-info btn-block mt-2" type="submit">Iniciar Sesi&oacute;n</button>
 
-                                <div class="mt-3 text-center">
-                                    <a class="text-muted" href="<?php echo base_url('login/signup') ?>">
-                                        <u>Registrar</u>
-                                    </a>
-                                </div>
-
                             </form>
 
                         </div>
                     </div>
-                    <div class="col-md-6 text-center" style="background-size: cover;background-image: url(<?php echo base_url('assets/') ?>dist-assets/images/local/photo-long-3.jpg)">
+                    <div class="col-md-6 text-center" style="background-size: cover;background-image: url(<?php echo base_url('assets/') ?>dist-assets/images/local/photo-long.png)">
                         <div class="pr-3 auth-right">
 
                         </div>
