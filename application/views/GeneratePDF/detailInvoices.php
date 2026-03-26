@@ -139,7 +139,7 @@ $wcon = $ci->parameters->webConfigurations();
                 $fecha_pago = (isset($c['fecha_conciliado']) && !empty($c['fecha_conciliado'])) ? date('d-m-Y', strtotime($c['fecha_conciliado'])) : '----';
             ?>
             <tr>
-                <td>Cargo - No. <?= isset($c['id']) ? $c['id'] : (isset($c['contract_id']) ? $c['contract_id'] : '') ?></td>
+                <td>Cargo - No. <?= $c['id']?></td>
                 <td><?= $fecha_generado ?></td>
                 <td><?= $cargo > 0 ? $cargo : '' ?></td>
                 <td><?= $descripcion ?></td>
