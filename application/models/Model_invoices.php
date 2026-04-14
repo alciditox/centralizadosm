@@ -239,7 +239,8 @@ class Model_invoices extends CI_Model
 		foreach ($contracts_chunks as $chunk) {
 			$batch = [];
 			foreach ($chunk as $c) {
-				$cuota = ($c['type_invoice'] === 'D') ? $c['cuota'] * 30 : $c['cuota'];
+				$tipo_invoice = trim($c['type_invoice']);
+				$cuota = ($tipo_invoice === 'D') ? $c['cuota'] * 30 : $c['cuota'];
 
 				$batch[] = [
 					'contract_id'      => $c['contrato'],
@@ -247,7 +248,7 @@ class Model_invoices extends CI_Model
 					'razon'            => $c['razon'],
 					'cuenta'           => $c['cuenta'],
 					'rif'              => $c['rif'],
-					'periodicidad'     => $c['type_invoice'],
+					'periodicidad'     => $tipo_invoice,
 					'afiliado'         => $c['afiliado'],
 					'nropos'           => $c['nropos'],
 					'cuota'            => $cuota,
