@@ -112,10 +112,10 @@ $wcon = $ci->parameters->webConfigurations();
         <thead>
             <tr>
                 <th>Concepto</th>
-                <th>Fecha</th>
+                <th>Mes Cobro</th>
                 <th>Cargos</th>
                 <th>Descripción de Pago</th>
-                <th>Fecha de Pago</th>
+                <th><!--Fecha de Pago--></th>
                 <th>Abonos</th>
                 <th>Balance</th>
             </tr>
@@ -135,7 +135,7 @@ $wcon = $ci->parameters->webConfigurations();
                 $total_abonos += $abono;
                 
                 $descripcion = "Domiciliación";
-                $fecha_generado = isset($c['fecha_mes_cobro']) ? date('d-m-Y', strtotime($c['fecha_mes_cobro'])) : date('d-m-Y');
+                $fecha_generado = isset($c['fecha_mes_cobro']) ? date('m-Y', strtotime($c['fecha_mes_cobro'])) : date('m-Y');
                 $fecha_pago = (isset($c['fecha_conciliado']) && !empty($c['fecha_conciliado'])) ? date('d-m-Y', strtotime($c['fecha_conciliado'])) : '----';
             ?>
             <tr>
