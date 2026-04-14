@@ -145,7 +145,8 @@ $wcon = $ci->parameters->webConfigurations();
                 <td><?= $descripcion ?></td>
                 <td><?= $fecha_pago ?></td>
                 <td><?= $abono > 0 ? $abono . (isset($c['tasa']) ? ' (Bs. ' . number_format($abono * (float)$c['tasa'], 2) . ')' : '') : '----' ?></td>
-                <td><?= number_format($balance, 2) ?></td>
+                <!-- <td><? //= number_format($balance, 2) ?></td> -->
+                <td><?= number_format(($cargo - $abono), 2) ?></td>
             </tr>
             <?php } ?>
             <tr>
