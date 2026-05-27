@@ -75,8 +75,9 @@ class Collections extends CI_Controller
 		///////////////////////////////////////////////
 		// 5. GUARDAR RUTA EN BD
 		///////////////////////////////////////////////
+		$relativeRecivedPath = "Storage/domiciliations/" . $bank_api['bank_code'] . "/recived/";
 		$add = [
-			'recived' => $recivedPath . $fileName,
+			'recived' => $relativeRecivedPath . $fileName,
 			'status'  => "Por Conciliar",
 		];
 
@@ -192,6 +193,11 @@ class Collections extends CI_Controller
 		// ---------- 1. buscar archivo ----------
 		$ruta = $this->model_collections->search_domiciliations_archive($postData);
 
+		// Si la ruta es relativa, convertirla a absoluta para fopen
+		if ($ruta && strpos($ruta, FCPATH) !== 0) {
+			$ruta = FCPATH . $ruta;
+		}
+
 		$headers = [];
 		$dataRows = [];
 		$line = 0;
@@ -226,9 +232,13 @@ class Collections extends CI_Controller
 			while (($data = fgetcsv($handle, 90000, ";")) !== FALSE) {
 				$line++;
 				if (count($data) === 1 && trim($data[0]) === "") continue;
-				// limpiar cada campo
+				// limpiar cada campo (BOM, comillas, espacios, \r)
 				$data = array_map(function ($v) {
-					return trim(str_replace(['"', "'"], "", (string)$v));
+					$v = (string)$v;
+					// Eliminar BOM UTF-8 si existe
+					$v = preg_replace('/^\x{FEFF}/u', '', $v);
+					$v = str_replace(['"', "'", "\r"], "", $v);
+					return trim($v);
 				}, $data);
 
 				if ($line == 1) {
@@ -246,6 +256,17 @@ class Collections extends CI_Controller
 			fclose($handle);
 		}
 
+		// ---------- 3b. validar headers requeridos ----------
+		$requiredHeaders = ['CODAFI', 'TERMIN', 'ANOL2', 'MESL', 'DIAL'];
+		$missingHeaders = array_diff($requiredHeaders, $headers);
+		if (!empty($missingHeaders)) {
+			$stats["errores"][] = "El archivo CSV no tiene las columnas requeridas: " . implode(', ', $missingHeaders)
+				. ". Columnas encontradas: " . implode(', ', $headers);
+			if ($this->db->trans_status() === FALSE) $this->db->trans_rollback();
+			else $this->db->trans_commit();
+			return $stats;
+		}
+
 		$stats["archivo_total"] = count($dataRows);
 		if (empty($dataRows)) {
 			if ($this->db->trans_status() === FALSE) $this->db->trans_rollback();
@@ -254,7 +275,9 @@ class Collections extends CI_Controller
 
 		// ---------- 4. decidir mes/año del archivo ----------
 		$sampleFila = reset($dataRows);
-		$mesAnoArchivo = "20" . $sampleFila["ANOL2"] . '-' . str_pad($sampleFila["MESL"], 2, "0", STR_PAD_LEFT);
+		$anol2 = isset($sampleFila["ANOL2"]) ? $sampleFila["ANOL2"] : '';
+		$mesl  = isset($sampleFila["MESL"]) ? $sampleFila["MESL"] : '';
+		$mesAnoArchivo = "20" . $anol2 . '-' . str_pad((string)$mesl, 2, "0", STR_PAD_LEFT);
 
 		// ---------- 5. traer invoices del mes/año ----------
 		$this->db->from('invoices');
@@ -286,9 +309,18 @@ class Collections extends CI_Controller
 
 		// ---------- 7. procesar cada fila ----------
 		foreach ($dataRows as $fila) {
-			$codafi = $fila["CODAFI"];
-			$nropos = $fila["TERMIN"];
-			$ymCSV = "20" . $fila["ANOL2"] . '-' . str_pad($fila["MESL"], 2, "0", STR_PAD_LEFT);
+			$codafi = isset($fila["CODAFI"]) ? $fila["CODAFI"] : '';
+			$nropos = isset($fila["TERMIN"]) ? $fila["TERMIN"] : '';
+			$anol2_f = isset($fila["ANOL2"]) ? $fila["ANOL2"] : '';
+			$mesl_f  = isset($fila["MESL"]) ? $fila["MESL"] : '';
+
+			// Saltar fila si faltan datos críticos
+			if (empty($codafi) || empty($nropos) || empty($anol2_f) || empty($mesl_f)) {
+				$stats["no_encontrados"]++;
+				continue;
+			}
+
+			$ymCSV = "20" . $anol2_f . '-' . str_pad((string)$mesl_f, 2, "0", STR_PAD_LEFT);
 			$keyCSV = $codafi . '|' . $nropos . '|' . $ymCSV;
 
 			// 1) intento match exacto en invIndex
@@ -345,7 +377,8 @@ class Collections extends CI_Controller
 				$stats["encontrados"]++;
 				$ids_encontrados[] = $dbData["id"];
 
-				$fecha_generado = $ymCSV . '-' . str_pad($fila["DIAL"], 2, "0", STR_PAD_LEFT);
+				$dial = isset($fila["DIAL"]) ? $fila["DIAL"] : '01';
+				$fecha_generado = $ymCSV . '-' . str_pad((string)$dial, 2, "0", STR_PAD_LEFT);
 
 				$existe = $this->model_collections->existe_collection($dbData["afiliado"], $dbData["nropos"], $ymCSV);
 				if ($existe) {

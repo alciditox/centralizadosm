@@ -22,7 +22,15 @@ switch ($k->status) {
 
     case 'Conciliado':
     ?>
-        <a href="<?= base_url('') . $k->recived; ?>" download>
+        <?php
+            // Compatibilidad: si la ruta guardada es absoluta, convertirla a relativa
+            $downloadPath = $k->recived;
+            $fcpath = FCPATH;
+            if (strpos($downloadPath, $fcpath) === 0) {
+                $downloadPath = substr($downloadPath, strlen($fcpath));
+            }
+        ?>
+        <a href="<?= base_url($downloadPath); ?>" download>
             <button class="btn btn-dark ripple m-1" type="button">Descargar Archivo</button>
         </a>
 

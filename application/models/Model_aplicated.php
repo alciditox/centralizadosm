@@ -200,16 +200,25 @@ class Model_aplicated extends CI_Model
         $sql = "
             SELECT c1.*, b1.cuenta_contable as cuentaContable
             FROM cobranza_aplicated c1
-            INNER JOIN cobranza_aplicated c2 
-                ON c1.concatenar = c2.concatenar 
-                AND c2.cocatena_fecha = c1.cocatena_fecha
-                AND c2.monto = c1.monto
-                AND c2.tipo = 'Reporte'
             INNER JOIN cobranza_bancos b1 ON c1.cuenta_contable = b1.codigo
+            INNER JOIN (
+                SELECT ca.concatenar, ca.cocatena_fecha, ca.monto
+                FROM cobranza_aplicated ca
+                INNER JOIN cobranza_aplicated cr
+                    ON ca.concatenar = cr.concatenar
+                    AND cr.cocatena_fecha = ca.cocatena_fecha
+                    AND cr.monto = ca.monto
+                    AND cr.tipo = 'Reporte'
+                WHERE ca.tipo = 'Credicard'
+                AND ca.create_user = " . $this->session->userdata['logged_in']['id'] . "
+                GROUP BY ca.concatenar, ca.cocatena_fecha, ca.monto
+                HAVING COUNT(*) > 1
+            ) duplicados
+                ON c1.concatenar = duplicados.concatenar
+                AND c1.cocatena_fecha = duplicados.cocatena_fecha
+                AND c1.monto = duplicados.monto
             WHERE c1.tipo = 'Credicard'
-            and c1.create_user = " . $this->session->userdata['logged_in']['id'] . "
-            GROUP BY c1.concatenar, c1.cocatena_fecha, c1.monto, c1.tipo
-            HAVING COUNT(*) > 1;
+            AND c1.create_user = " . $this->session->userdata['logged_in']['id'] . "
         ";
 
         $query = $this->db->query($sql);

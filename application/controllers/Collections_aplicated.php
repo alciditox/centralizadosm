@@ -1,11 +1,4 @@
 <?php
-error_reporting(0);
-error_reporting(E_ERROR | E_WARNING | E_PARSE);
-error_reporting(E_ERROR | E_WARNING | E_PARSE | E_NOTICE);
-error_reporting(E_ALL ^ E_NOTICE);
-error_reporting(E_ALL);
-error_reporting(-1);
-ini_set('error_reporting', E_ALL);
 
 defined('BASEPATH') or exit('No direct script access allowed');
 
@@ -73,15 +66,15 @@ class Collections_aplicated extends CI_Controller
             $row[] = $bank->codigo;
             $row[] = $bank->nombre;
             $row[] = $bank->cuenta_contable;
-            
+
             $status_badge = ($bank->status == 'Activo') ? '<span class="badge badge-success">Activo</span>' : '<span class="badge badge-danger">Inactivo</span>';
             $row[] = $status_badge;
-            
+
             $actions = '
-                <button type="button" class="btn btn-primary btn-sm btn-icon" onclick="editBank('.$bank->id.')">
+                <button type="button" class="btn btn-primary btn-sm btn-icon" onclick="editBank(' . $bank->id . ')">
                     <span class="ul-btn__icon"><i class="fal fa-edit"></i></span>
                 </button>
-                <button type="button" class="btn btn-danger btn-sm btn-icon" onclick="deleteBank('.$bank->id.')">
+                <button type="button" class="btn btn-danger btn-sm btn-icon" onclick="deleteBank(' . $bank->id . ')">
                     <span class="ul-btn__icon"><i class="fal fa-trash-alt"></i></span>
                 </button>
             ';
@@ -152,9 +145,6 @@ class Collections_aplicated extends CI_Controller
         }
 
         // Configuración para procesamiento largo
-        ini_set('display_errors', 0);
-        ini_set('display_startup_errors', 0);
-        error_reporting(E_ALL & ~E_DEPRECATED & ~E_STRICT & ~E_NOTICE);
         ini_set('memory_limit', '-1');
         ini_set('max_execution_time', '0');
         ini_set('post_max_size', '50M');
@@ -171,114 +161,155 @@ class Collections_aplicated extends CI_Controller
         echo '<!-- Procesando archivos... -->';
         flush();
 
-        // Validar que se hayan subido archivos
-        if (empty($_FILES) || !isset($_FILES['userfile']) || empty($_FILES['userfile']['name'])) {
-            $this->session->set_flashdata('modal', 'Error: No se recibieron archivos. El archivo puede ser demasiado grande.');
-            redirect('collections_aplicated/generate');
-            return;
-        }
-
-        $this->load->library('upload');
-        $dataInfo = array();
-        $files = $_FILES;
-        $cpt = count($_FILES['userfile']['name']);
-        $cuenta_contable = $this->input->post('cuenta_contable');
-
-        // Limpiar archivos anteriores para evitar conflictos por case-sensitivity en Linux
-        $oldFiles = glob(FCPATH . "Storage/concatena/file_*");
-        foreach ($oldFiles as $oldFile) {
-            if (is_file($oldFile)) {
-                unlink($oldFile);
+        // Manejador de errores personalizado - solo errores críticos, ignorar deprecaciones
+        set_error_handler(function ($errno, $errstr, $errfile, $errline) {
+            // Ignorar deprecaciones, notices y strict standards
+            if ($errno & (E_DEPRECATED | E_USER_DEPRECATED | E_NOTICE | E_USER_NOTICE | E_STRICT)) {
+                return true; // No hacer nada, solo suprimir
             }
-        }
+            throw new ErrorException($errstr, 0, $errno, $errfile, $errline);
+        });
 
-        for ($i = 0; $i < $cpt; $i++) {
-            $_FILES['userfile']['name'] = $files['userfile']['name'][$i];
-            $_FILES['userfile']['type'] = $files['userfile']['type'][$i];
-            $_FILES['userfile']['tmp_name'] = $files['userfile']['tmp_name'][$i];
-            $_FILES['userfile']['error'] = $files['userfile']['error'][$i];
-            $_FILES['userfile']['size'] = $files['userfile']['size'][$i];
-
-            $path = $_FILES['userfile']['name'];
-            $name = "file_" . $i . "_" . $cuenta_contable . "." . strtolower(pathinfo($path, PATHINFO_EXTENSION));
-
-            $this->upload->initialize($this->set_upload_options($name));
-            if (!$this->upload->do_upload('userfile')) {
-                $this->session->set_flashdata('modal', $this->upload->display_errors());
-                redirect('collections_aplicated/generate');
-                return;
+        try {
+            // Validar que se hayan subido archivos
+            if (empty($_FILES) || !isset($_FILES['userfile']) || empty($_FILES['userfile']['name'])) {
+                throw new Exception('No se recibieron archivos. El archivo puede ser demasiado grande.');
             }
-            $dataInfo[] = $this->upload->data();
-        }
 
-        // ===== OPTIMIZACIÓN: Cachear valores repetidos fuera de los loops =====
-        $create_user = $this->session->userdata['logged_in']['id'];
-        $batchSize = 20000;
-        $totalRegistros = 0;
+            $this->load->library('upload');
+            $dataInfo = array();
+            $files = $_FILES;
+            $cpt = count($_FILES['userfile']['name']);
+            $cuenta_contable = $this->input->post('cuenta_contable');
 
-        // Liberar sesión para evitar bloqueos
-        session_write_close();
+            // Limpiar archivos anteriores para evitar conflictos por case-sensitivity en Linux
+            $oldFiles = glob(FCPATH . "Storage/concatena/file_*");
+            foreach ($oldFiles as $oldFile) {
+                if (is_file($oldFile)) {
+                    unlink($oldFile);
+                }
+            }
 
-        // ===== OPTIMIZACIÓN: MySQL tuning para importación masiva =====
-        $this->db->query('SET autocommit=0');
-        $this->db->query('SET unique_checks=0');
-        $this->db->query('SET foreign_key_checks=0');
-        $this->db->save_queries = false;
+            for ($i = 0; $i < $cpt; $i++) {
+                $_FILES['userfile']['name'] = $files['userfile']['name'][$i];
+                $_FILES['userfile']['type'] = $files['userfile']['type'][$i];
+                $_FILES['userfile']['tmp_name'] = $files['userfile']['tmp_name'][$i];
+                $_FILES['userfile']['error'] = $files['userfile']['error'][$i];
+                $_FILES['userfile']['size'] = $files['userfile']['size'][$i];
 
-        // ===== ARCHIVO 1: CREDICARD (CSV o XLSX) =====
-        $files_found = glob(FCPATH . "Storage/concatena/file_0_" . $cuenta_contable . ".*");
-        if (!empty($files_found)) {
-            $enlace = $files_found[0];
-            $ext = strtolower(pathinfo($enlace, PATHINFO_EXTENSION));
-            log_message('error', "Procesando file_0_{$cuenta_contable} (Credicard) - Ext: $ext");
+                $path = $_FILES['userfile']['name'];
+                $name = "file_" . $i . "_" . $cuenta_contable . "." . strtolower(pathinfo($path, PATHINFO_EXTENSION));
 
-            if ($ext === 'csv') {
+                $this->upload->initialize($this->set_upload_options($name));
+                if (!$this->upload->do_upload('userfile')) {
+                    throw new Exception('Error al subir archivo: ' . strip_tags($this->upload->display_errors()));
+                }
+                $dataInfo[] = $this->upload->data();
+            }
+
+            // ===== OPTIMIZACIÓN: Cachear valores repetidos fuera de los loops =====
+            $create_user = $this->session->userdata['logged_in']['id'];
+            $batchSize = 20000;
+            $totalRegistros = 0;
+
+            // Liberar sesión para evitar bloqueos
+            session_write_close();
+
+            // ===== OPTIMIZACIÓN: MySQL tuning para importación masiva =====
+            $this->db->query('SET autocommit=0');
+            $this->db->query('SET unique_checks=0');
+            $this->db->query('SET foreign_key_checks=0');
+            $this->db->save_queries = false;
+
+            // ===== ARCHIVO 1: CREDICARD (CSV o XLSX) =====
+            $files_found = glob(FCPATH . "Storage/concatena/file_0_" . $cuenta_contable . ".*");
+            if (!empty($files_found)) {
+                $enlace = $files_found[0];
+                $ext = strtolower(pathinfo($enlace, PATHINFO_EXTENSION));
+                log_message('error', "Procesando file_0_{$cuenta_contable} (Credicard) - Ext: $ext");
+
+                //if ($ext === 'csv') {
                 $totalRegistros += $this->_processCredicardCSV($enlace, $cuenta_contable, $create_user, $batchSize);
+                /*} else {
+                    $totalRegistros += $this->_processCredicardXLSX($enlace, $cuenta_contable, $create_user, $batchSize);
+                }*/
             } else {
-                $totalRegistros += $this->_processCredicardXLSX($enlace, $cuenta_contable, $create_user, $batchSize);
+                log_message('error', "No se encontró file_0_{$cuenta_contable}");
             }
-        } else {
-            log_message('error', "No se encontró file_0_{$cuenta_contable}");
-        }
 
-        // ===== ARCHIVO 2: REPORTE (CSV o XLSX) =====
-        $files_found = glob(FCPATH . "Storage/concatena/file_1_" . $cuenta_contable . ".*");
-        if (!empty($files_found)) {
-            $enlace = $files_found[0];
-            $ext = strtolower(pathinfo($enlace, PATHINFO_EXTENSION));
-            log_message('error', "Procesando file_1_{$cuenta_contable} (Reporte) - Ext: $ext");
+            // ===== ARCHIVO 2: REPORTE (CSV o XLSX) =====
+            $files_found = glob(FCPATH . "Storage/concatena/file_1_" . $cuenta_contable . ".*");
+            if (!empty($files_found)) {
+                $enlace = $files_found[0];
+                $ext = strtolower(pathinfo($enlace, PATHINFO_EXTENSION));
+                log_message('error', "Procesando file_1_{$cuenta_contable} (Reporte) - Ext: $ext");
 
-            if ($ext === 'csv') {
-                $totalRegistros += $this->_processReporteCSV($enlace, $cuenta_contable, $create_user, $batchSize);
-            } else {
+                /*if ($ext === 'csv') {
+                    $totalRegistros += $this->_processReporteCSV($enlace, $cuenta_contable, $create_user, $batchSize);
+                } else {*/
                 $totalRegistros += $this->_processReporteXLSX($enlace, $cuenta_contable, $create_user, $batchSize);
+                // }
+            } else {
+                log_message('error', "No se encontró file_1");
             }
-        } else {
-            log_message('error', "No se encontró file_1");
+
+            // ===== Finalizar: COMMIT y restaurar configuración MySQL =====
+            $this->db->query('COMMIT');
+            $this->db->query('SET autocommit=1');
+            $this->db->query('SET unique_checks=1');
+            $this->db->query('SET foreign_key_checks=1');
+            $this->db->save_queries = true;
+
+            // Calcular duración
+            $endTime = microtime(true);
+            $duration = $endTime - $startTime;
+            $minutes = floor($duration / 60);
+            $seconds = floor($duration % 60);
+            $timeStr = ($minutes > 0) ? "{$minutes}m {$seconds}s" : "{$seconds}s";
+
+            log_message('error', "Fin subeDataClient. Total: $totalRegistros. Tiempo: $timeStr. Redirigiendo...");
+            echo "<!-- Procesamiento finalizado. Redirigiendo... -->";
+            echo '<div style="background:green;color:white;padding:20px;text-align:center">Proceso Completado en ' . $timeStr . '. Redirigiendo...</div>';
+            echo '<script>setTimeout(function(){ window.location.href = "' . base_url('collections_aplicated/generate') . '"; }, 2000);</script>';
+        } catch (Exception $e) {
+            // Restaurar configuración MySQL en caso de error
+            try {
+                $this->db->query('ROLLBACK');
+                $this->db->query('SET autocommit=1');
+                $this->db->query('SET unique_checks=1');
+                $this->db->query('SET foreign_key_checks=1');
+                $this->db->save_queries = true;
+            } catch (Exception $dbEx) {
+                // Ignorar errores de limpieza DB
+            }
+
+            $errorMsg = $e->getMessage();
+            log_message('error', "subeDataClient ERROR: {$errorMsg} en {$e->getFile()}:{$e->getLine()}");
+
+            echo '<div style="background:#dc3545;color:white;padding:20px;text-align:center;font-family:Arial,sans-serif">';
+            echo '<h3 style="margin:0 0 10px">Error al procesar archivos</h3>';
+            echo '<p style="margin:0">' . htmlspecialchars($errorMsg) . '</p>';
+            echo '</div>';
+            echo '<script>setTimeout(function(){ window.location.href = "' . base_url('collections_aplicated/generate') . '"; }, 5000);</script>';
+        } catch (Error $e) {
+            // Capturar errores fatales de PHP 7+
+            $errorMsg = $e->getMessage();
+            log_message('error', "subeDataClient FATAL: {$errorMsg} en {$e->getFile()}:{$e->getLine()}");
+
+            echo '<div style="background:#dc3545;color:white;padding:20px;text-align:center;font-family:Arial,sans-serif">';
+            echo '<h3 style="margin:0 0 10px">Error fatal al procesar</h3>';
+            echo '<p style="margin:0">' . htmlspecialchars($errorMsg) . '</p>';
+            echo '</div>';
+            echo '<script>setTimeout(function(){ window.location.href = "' . base_url('collections_aplicated/generate') . '"; }, 5000);</script>';
         }
 
-        // ===== Finalizar: COMMIT y restaurar configuración MySQL =====
-        $this->db->query('COMMIT');
-        $this->db->query('SET autocommit=1');
-        $this->db->query('SET unique_checks=1');
-        $this->db->query('SET foreign_key_checks=1');
-        $this->db->save_queries = true;
+        // Restaurar manejador de errores
+        restore_error_handler();
 
-        // Calcular duración
-        $endTime = microtime(true);
-        $duration = $endTime - $startTime;
-        $minutes = floor($duration / 60);
-        $seconds = floor($duration % 60);
-        $timeStr = ($minutes > 0) ? "{$minutes}m {$seconds}s" : "{$seconds}s";
-
-        log_message('error', "Fin subeDataClient. Total: $totalRegistros. Tiempo: $timeStr. Redirigiendo...");
-        echo "<!-- Procesamiento finalizado. Redirigiendo... -->";
-        echo '<div style="background:green;color:white;padding:20px;text-align:center">Proceso Completado en ' . $timeStr . '. Redirigiendo...</div>';
-        echo '<script>setTimeout(function(){ window.location.href = "' . base_url('collections_aplicated/generate') . '"; }, 2000);</script>';
-
-        // Forzar envío final
+        // Forzar envío final y terminar para evitar que CI Output procese output nulo
         if (ob_get_length()) ob_end_flush();
         flush();
+        exit;
     }
 
 
@@ -328,14 +359,20 @@ class Collections_aplicated extends CI_Controller
                 }
 
                 // Mapeo Credicard (CSV)
-                if ($cuenta_contable == '40') {
-                    $fecha = $t[1];
+                if ($cuenta_contable == '18') {
+                    $fecha = $t[0];
                     $dia = substr($fecha, 6, 2);
                     $mes = substr($fecha, 4, 2);
                     $concatenar = $t[4] . $t[5] . str_pad($dia, 2, "0", STR_PAD_LEFT);
                     $termin_dial_mesl = $t[5] . str_pad($dia, 2, "0", STR_PAD_LEFT) . str_pad($mes, 2, "0", STR_PAD_LEFT);
                     $fecha_norm = substr($fecha, 0, 4) . '-' . substr($fecha, 4, 2) . '-' . substr($fecha, 6, 2);
                     $fecha_final = date("Y-m-d", strtotime($fecha_norm));
+
+                    /////////////////////////////////////////////////
+                    $fecha_archivo = $t[1];
+                    $fecha_norm_archivo = substr($fecha_archivo, 0, 4) . '-' . substr($fecha_archivo, 4, 2) . '-' . substr($fecha_archivo, 6, 2);
+                    $fecha_final_archivo = date("Y-m-d", strtotime($fecha_norm_archivo));
+                    /////////////////////////////////////////////////
                     $monto = str_replace(",", ".", $t[12]);
                     $val_tas = (is_numeric(str_replace(".", "", $t[17])) ? (float)str_replace(".", "", $t[17]) : 0) / 1000000;
                     $tasa = number_format($val_tas, 2, '.', '');
@@ -343,22 +380,30 @@ class Collections_aplicated extends CI_Controller
                     $codigo_afiliacion = $t[4];
                     $termin = $t[5];
                 } else {
-                    $concatenar = $t[2] . $t[3] . str_pad($t[4], 2, "0", STR_PAD_LEFT);
-                    $termin_dial_mesl = $t[4] . str_pad($t[4], 2, "0", STR_PAD_LEFT) . str_pad($t[5], 2, "0", STR_PAD_LEFT);
-                    $fecha_norm = $t[6] . "-" . $t[5] . "-" . $t[4];
+                    // CSV headers: F/Proceso;F/Archivo;F/Ibs;Aliado;Afiliado;Terminal;Lote;...
+                    // $t[0]=F/Proceso(YYYYMMDD), $t[4]=Afiliado, $t[5]=Terminal
+                    // $t[11]=Comision, $t[13]=Credito Aliado(monto), $t[17]=Tasa de Cambio
+                    $fecha = $t[0]; // Formato YYYYMMDD ej: 20260228
+                    $dia = substr($fecha, 6, 2);
+                    $mes = substr($fecha, 4, 2);
+                    $anio = substr($fecha, 0, 4);
+                    $concatenar = $t[4] . $t[5] . str_pad($dia, 2, "0", STR_PAD_LEFT);
+                    $termin_dial_mesl = $t[5] . str_pad($dia, 2, "0", STR_PAD_LEFT) . str_pad($mes, 2, "0", STR_PAD_LEFT);
+                    $fecha_norm = $anio . "-" . $mes . "-" . $dia;
                     $fecha_final = date("Y-m-d", strtotime($fecha_norm));
-                    $monto = str_replace(",", ".", $t[16]);
-                    $tasa = str_replace(",", ".", $t[10]);
-                    $bs = str_replace(",", ".", $t[15]);
-                    $codigo_afiliacion = $t[2];
-                    $termin = $t[3];
+                    $monto = str_replace(",", ".", $t[13]);
+                    $val_tas = (is_numeric(str_replace(".", "", $t[17])) ? (float)str_replace(".", "", $t[17]) : 0) / 1000000;
+                    $tasa = number_format($val_tas, 2, '.', '');
+                    $bs = str_replace(",", ".", $t[11]);
+                    $codigo_afiliacion = $t[4];
+                    $termin = $t[5];
                 }
 
                 $batchData[] = [
                     'tipo' => "Credicard",
                     'cuenta_contable' => $cuenta_contable,
                     'concatenar' => $concatenar,
-                    'fecha' => $fecha_final,
+                    'fecha' => $fecha_final_archivo,
                     'cocatena_fecha' => str_replace("-", "", $fecha_final),
                     'codigo_cliente' => null,
                     'no_cobro' => null,
@@ -383,131 +428,6 @@ class Collections_aplicated extends CI_Controller
         }
         $this->_insertBatch($batchData, $total, "Residual Credicard CSV");
         log_message('error', "_processCredicardCSV RESULTADO: Leidas={$linesRead} Saltadas={$linesSkipped} Insertadas={$total}");
-        return $total;
-    }
-
-    private function _processCredicardXLSX($enlace, $cuenta_contable, $create_user, $batchSize)
-    {
-        $total = 0;
-        $batchData = [];
-        try {
-            $reader = IOFactory::createReaderForFile($enlace);
-            $reader->setReadDataOnly(true);
-            // Suppress deprecation warnings during load for PHP 8.3+
-            $oldErrorLevel = error_reporting(E_ALL & ~E_DEPRECATED & ~E_STRICT & ~E_NOTICE);
-            $spreadsheet = $reader->load($enlace);
-            error_reporting($oldErrorLevel);
-            $worksheet = $spreadsheet->getActiveSheet();
-            $isFirstRow = true;
-
-            foreach ($worksheet->getRowIterator() as $row) {
-                if ($isFirstRow) {
-                    $isFirstRow = false;
-                    continue;
-                }
-                $cellIterator = $row->getCellIterator();
-                $cellIterator->setIterateOnlyExistingCells(false);
-                $t = [];
-                foreach ($cellIterator as $cell) {
-                    $t[] = $cell->getValue();
-                }
-
-                if (empty($t[2])) continue;
-
-                // Mapeo Credicard (XLSX) - Basado en la misma lógica que CSV pero asumiendo índices similares
-                /* if ($cuenta_contable == '40') {
-                    $fecha = $t[1];
-                    $concatenar = $t[4] . $t[5] . date("d", strtotime($fecha));
-                    $termin_dial_mesl = $t[5] . date("dm", strtotime($fecha));
-                    $fecha_final = date("Y-m-d", strtotime($fecha));
-                    $monto = $t[13];
-                    $tasa = $t[18];
-                    $bs = $t[14];
-                    $codigo_afiliacion = $t[4];
-                    $termin = $t[5];
-                } else {*/
-                $concatenar = $t[2] . $t[3] . str_pad($t[4], 2, "0", STR_PAD_LEFT);
-                $termin_dial_mesl = $t[4] . str_pad($t[4], 2, "0", STR_PAD_LEFT) . str_pad($t[5], 2, "0", STR_PAD_LEFT);
-                $fecha_norm = $t[6] . "-" . $t[5] . "-" . $t[4];
-                $fecha_final = date("Y-m-d", strtotime($fecha_norm));
-                $monto = $t[16];
-                $tasa = $t[10];
-                $bs = $t[15];
-                $codigo_afiliacion = $t[2];
-                $termin = $t[3];
-                //}
-
-                $batchData[] = [
-                    'tipo' => "Credicard",
-                    'cuenta_contable' => $cuenta_contable,
-                    'concatenar' => $concatenar,
-                    'fecha' => $fecha_final,
-                    'cocatena_fecha' => str_replace("-", "", $fecha_final),
-                    'codigo_cliente' => null,
-                    'no_cobro' => null,
-                    'termin_dial_mesl' => $termin_dial_mesl,
-                    'tipo_operacion' => "Cobro",
-                    'operacion' => "credito",
-                    'monto' => $monto,
-                    'tasa' => $tasa,
-                    'bs' => $bs,
-                    'rif' => null,
-                    'codigo_afiliacion' => $codigo_afiliacion,
-                    'serial' => null,
-                    'termin' => $termin,
-                    'create_user' => $create_user
-                ];
-
-                if (count($batchData) >= $batchSize) {
-                    $this->_insertBatch($batchData, $total, "Credicard XLSX");
-                }
-            }
-            unset($spreadsheet);
-        } catch (Exception $e) {
-            log_message('error', "Error en _processCredicardXLSX: " . $e->getMessage());
-        }
-        $this->_insertBatch($batchData, $total, "Residual Credicard XLSX");
-        return $total;
-    }
-
-    private function _processReporteCSV($enlace, $cuenta_contable, $create_user, $batchSize)
-    {
-        $total = 0;
-        $batchData = [];
-        if (($handle = fopen($enlace, "r")) !== FALSE) {
-            fgetcsv($handle, 0, ";", "\"", ""); // Skip header - escape vacío para PHP 8.4+
-            while (($t = fgetcsv($handle, 0, ";", "\"", "")) !== FALSE) {
-                $t = array_map('trim', $t);
-                if (empty($t[4])) continue;
-
-                $batchData[] = [
-                    'tipo' => "Reporte",
-                    'cuenta_contable' => $cuenta_contable,
-                    'concatenar' => $t[14] . $t[15] . date("d", strtotime($t[8])),
-                    'fecha' => date("Y-m-d", strtotime($t[8])),
-                    'cocatena_fecha' => str_replace("-", "", date("Y-m-d", strtotime($t[8]))),
-                    'codigo_cliente' => $t[2],
-                    'no_cobro' => $t[1],
-                    'termin_dial_mesl' => null,
-                    'tipo_operacion' => "Cobro",
-                    'operacion' => "credito",
-                    'monto' => str_replace(",", ".", $t[10]),
-                    'tasa' => null,
-                    'bs' => null,
-                    'rif' => $t[4],
-                    'codigo_afiliacion' => $t[14],
-                    'serial' => $t[16],
-                    'termin' => null,
-                    'create_user' => $create_user
-                ];
-
-                if (count($batchData) >= $batchSize) {
-                    $this->_insertBatch($batchData, $total, "Reporte CSV");
-                }
-            }
-            fclose($handle);
-        }
-        $this->_insertBatch($batchData, $total, "Residual Reporte CSV");
         return $total;
     }
 
@@ -541,7 +461,7 @@ class Collections_aplicated extends CI_Controller
                 $batchData[] = [
                     'tipo' => "Reporte",
                     'cuenta_contable' => $cuenta_contable,
-                    'concatenar' => $t[14] . $t[15] . date("d", strtotime($t[8])),
+                    'concatenar' => $t[15] . $t[16] . date("d", strtotime($t[8])),
                     'fecha' => date("Y-m-d", strtotime($t[8])),
                     'cocatena_fecha' => str_replace("-", "", date("Y-m-d", strtotime($t[8]))),
                     'codigo_cliente' => $t[2],
@@ -553,8 +473,8 @@ class Collections_aplicated extends CI_Controller
                     'tasa' => null,
                     'bs' => null,
                     'rif' => $t[4],
-                    'codigo_afiliacion' => $t[14],
-                    'serial' => $t[16],
+                    'codigo_afiliacion' => $t[15],
+                    'serial' => $t[17],
                     'termin' => null,
                     'create_user' => $create_user
                 ];
@@ -684,7 +604,7 @@ class Collections_aplicated extends CI_Controller
                     $t = array_map('trim', $t);
                     if (empty($t[2])) continue;
 
-                    if ($this->input->post('cuenta_contable') == '40') {
+                    if ($this->input->post('cuenta_contable') == '18') {
                         $fecha = $t[0];
                         $dia = substr($fecha, 6, 2);
                         $mes = substr($fecha, 4, 2);
@@ -902,12 +822,17 @@ class Collections_aplicated extends CI_Controller
         }
 
         $archivo = $nombre_archivo . " - Carga Masiva.xlsx";
+
+        // Limpiar cualquier output previo para evitar corrupción del archivo
+        if (ob_get_length()) ob_end_clean();
+
         header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        header('Content-Type: application/vnd.ms-excel; charset=UTF-8');
         header('Content-Disposition: attachment;filename="' . $archivo . '"');
         header('Cache-Control: max-age=0');
+        header('Pragma: public');
         $writer = new Xlsx($spreadsheet);
         $writer->save('php://output');
+        exit;
     }
 
     public function excel_cobranza_csv($variable = null)
@@ -944,8 +869,14 @@ class Collections_aplicated extends CI_Controller
         //$cargarData = $this->model_aplicated->crear_reporte();
 
         $archivo = $nombre_archivo . " - Carga Masiva.csv";
+
+        // Limpiar cualquier output previo para evitar corrupción del archivo
+        if (ob_get_length()) ob_end_clean();
+
         header('Content-Type: text/csv; charset=utf-8');
         header('Content-Disposition: attachment; filename="' . $archivo . '"');
+        header('Cache-Control: max-age=0');
+        header('Pragma: public');
 
         $output = fopen('php://output', 'w');
 

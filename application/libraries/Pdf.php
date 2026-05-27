@@ -11,6 +11,15 @@ class Pdf
         $options = new Dompdf\Options();
         $options->setChroot(__DIR__);
         $options->setIsRemoteEnabled(true);
+        
+        // Configuración de rutas personalizadas para evitar errores de permisos
+        $fontDir = FCPATH . 'Storage/fonts';
+        $tempDir = FCPATH . 'Storage/temp';
+        
+        $options->set('fontDir', $fontDir);
+        $options->set('fontCache', $fontDir);
+        $options->set('tempDir', $tempDir);
+
         $dompdf = new Dompdf\Dompdf($options);
 
         $dompdf->load_html($html);

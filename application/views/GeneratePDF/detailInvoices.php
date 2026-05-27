@@ -9,7 +9,6 @@ $wcon = $ci->parameters->webConfigurations();
 <head>
     <meta charset="UTF-8" />
     <title><?= $wcon->tittle; ?></title>
-    <link href="https://fonts.googleapis.com/css?family=Nunito:300,400,400i,600,700,800,900" rel="stylesheet" />
     <style>
         img {
             width: 20em;
