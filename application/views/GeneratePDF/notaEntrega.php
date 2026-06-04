@@ -9,7 +9,6 @@ $wcon = $ci->parameters->webConfigurations();
 <head>
     <meta charset="UTF-8" />
     <title><?= $wcon->tittle; ?></title>
-    <link href="https://fonts.googleapis.com/css?family=Nunito:300,400,400i,600,700,800,900" rel="stylesheet" />
     <style>
         img {
             width: 20em;
@@ -163,10 +162,6 @@ $wcon = $ci->parameters->webConfigurations();
     </div>
     <!-- end of row-->
 
-
-    <!-- DataTables  & Plugins -->
-    <script src="<?php echo base_url('assets/') ?>dist-assets/js/plugins/datatables.min.js"></script>
-    <script src="<?php echo base_url('assets/') ?>dist-assets/js/scripts/datatables.script.min.js"></script>
 
 </body>
 
