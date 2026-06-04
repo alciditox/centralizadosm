@@ -182,8 +182,154 @@ class Collections extends CI_Controller
 
 
 	/* ---------------------------------------------------
-   FUNCIÓN PRINCIPAL DE CONCILIACIÓN
-   --------------------------------------------------- */
+	   CONSOLIDADO DE PAGOS PROCESADOS
+	   --------------------------------------------------- */
+
+	public function consolidado_procesado()
+	{
+		$data['bancos'] = $this->model_invoices->banks();
+		$data['main_content'] = 'collections/consolidado_procesado.php';
+		$this->load->view('layout/template', $data);
+	}
+
+	public function get_consolidado_procesado_ajax()
+	{
+		header('Content-Type: application/json');
+
+		try {
+			$postData = $this->input->post();
+
+			$data            = $this->model_collections->get_consolidado_procesado($postData);
+			$recordsTotal    = $this->model_collections->count_consolidado_procesado($postData);
+			$recordsFiltered = $this->model_collections->count_filtered_consolidado_procesado($postData);
+
+			$periodicidad_map = [
+				'A' => 'Anual', 'M' => 'Mensual', 'Q' => 'Quincenal',
+				'S' => 'Semanal', 'D' => 'Diario',
+			];
+
+			$status_badges = [
+				'Pendiente' => 'badge-warning', 'Rechazado' => 'badge-danger',
+				'Aprobado'  => 'badge-success', 'Manual'    => 'badge-info',
+				'Anulado'   => 'badge-dark',
+			];
+
+			$result = [];
+			foreach ($data as $row) {
+				$st = isset($row->status) ? $row->status : '';
+				$badge_class = isset($status_badges[$st]) ? $status_badges[$st] : 'badge-secondary';
+				$freq = isset($periodicidad_map[$row->periodicidad]) ? $periodicidad_map[$row->periodicidad] : $row->periodicidad;
+
+				$result[] = [
+					$row->id,
+					$row->contract_id,
+					$row->banco,
+					$row->cuenta,
+					$row->rif,
+					$row->razon,
+					$row->afiliado,
+					$freq,
+					$row->nropos,
+					'<span class="badge ' . $badge_class . '">' . $st . '</span>',
+					$row->c_fecha_generado,
+					$row->c_fecha_conciliado,
+					$row->c_fecha_procesado,
+					$row->c_tasa,
+					$row->c_monto,
+					$row->c_usd,
+					$row->c_nropos,
+				];
+			}
+
+			echo json_encode([
+				"draw"            => isset($postData['draw']) ? intval($postData['draw']) : 0,
+				"recordsTotal"    => $recordsTotal,
+				"recordsFiltered" => $recordsFiltered,
+				"data"            => $result,
+			]);
+		} catch (Exception $e) {
+			echo json_encode([
+				"draw" => 0, "recordsTotal" => 0,
+				"recordsFiltered" => 0, "data" => [],
+				"error" => $e->getMessage()
+			]);
+		}
+		exit;
+	}
+
+	public function export_consolidado_procesado()
+	{
+		ini_set('memory_limit', '-1');
+		ini_set('max_execution_time', '0');
+		set_time_limit(0);
+
+		$postData = $this->input->get();
+		$data = $this->model_collections->get_consolidado_procesado_all($postData);
+
+		$periodicidad_map = [
+			'A' => 'Anual', 'M' => 'Mensual', 'Q' => 'Quincenal',
+			'S' => 'Semanal', 'D' => 'Diario',
+		];
+
+		$spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+		$sheet = $spreadsheet->getActiveSheet();
+		$sheet->setTitle("Consolidado Procesado");
+
+		$headers = [
+			'A' => 'Nro Cobro', 'B' => 'Contrato', 'C' => 'Banco', 'D' => 'Cuenta',
+			'E' => 'RIF', 'F' => 'Razon', 'G' => 'Afiliado', 'H' => 'Frecuencia',
+			'I' => 'Nro POS', 'J' => 'Status', 'K' => 'Fecha Generado',
+			'L' => 'Fecha Conciliado', 'M' => 'Fecha Procesado',
+			'N' => 'Tasa', 'O' => 'Monto', 'P' => 'USD', 'Q' => 'Nro POS (Col)',
+		];
+
+		$styleArray = [
+			'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
+			'fill' => [
+				'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
+				'startColor' => ['argb' => '1C235A'],
+			],
+		];
+
+		foreach ($headers as $col => $name) {
+			$sheet->setCellValue("{$col}1", $name);
+			$sheet->getStyle("{$col}1")->applyFromArray($styleArray);
+			$sheet->getColumnDimension($col)->setWidth(18);
+		}
+
+		$row = 2;
+		foreach ($data as $d) {
+			$freq = isset($periodicidad_map[$d->periodicidad]) ? $periodicidad_map[$d->periodicidad] : $d->periodicidad;
+			$sheet->setCellValue("A{$row}", $d->id);
+			$sheet->setCellValue("B{$row}", $d->contract_id);
+			$sheet->setCellValue("C{$row}", $d->banco);
+			$sheet->setCellValue("D{$row}", $d->cuenta);
+			$sheet->setCellValue("E{$row}", $d->rif);
+			$sheet->setCellValue("F{$row}", $d->razon);
+			$sheet->setCellValue("G{$row}", $d->afiliado);
+			$sheet->setCellValue("H{$row}", $freq);
+			$sheet->setCellValue("I{$row}", $d->nropos);
+			$sheet->setCellValue("J{$row}", $d->status);
+			$sheet->setCellValue("K{$row}", $d->c_fecha_generado);
+			$sheet->setCellValue("L{$row}", $d->c_fecha_conciliado);
+			$sheet->setCellValue("M{$row}", $d->c_fecha_procesado);
+			$sheet->setCellValue("N{$row}", $d->c_tasa);
+			$sheet->setCellValue("O{$row}", $d->c_monto);
+			$sheet->setCellValue("P{$row}", $d->c_usd);
+			$sheet->setCellValue("Q{$row}", $d->c_nropos);
+			$row++;
+		}
+
+		$archivo = "Consolidado_Pagos_Procesados_" . date('Y-m-d') . ".xlsx";
+		header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+		header('Content-Disposition: attachment;filename="' . $archivo . '"');
+		header('Cache-Control: max-age=0');
+
+		$writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+		ob_end_clean();
+		$writer->save('php://output');
+		exit;
+	}
 
 	private function conciliar_bank($postData)
 	{
