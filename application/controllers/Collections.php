@@ -20,6 +20,7 @@ class Collections extends CI_Controller
 		$this->load->model('model_invoices');
 		$this->load->model('model_collections');
 		$this->load->model('model_domiciliations');
+		$this->load->model('model_apis');
 
 		$this->load->library('email');
 
@@ -221,15 +222,26 @@ class Collections extends CI_Controller
 			];
 
 			$result = [];
+
+			// Mapa de bancos (id => nombre)
+			$bancos_api = $this->model_apis->banks();
+			$banco_map = [];
+			if (is_array($bancos_api)) {
+				foreach ($bancos_api as $b) {
+					$banco_map[$b['id']] = $b['description'];
+				}
+			}
+
 			foreach ($data as $row) {
 				$st = isset($row->status) ? $row->status : '';
 				$badge_class = isset($status_badges[$st]) ? $status_badges[$st] : 'badge-secondary';
 				$freq = isset($periodicidad_map[$row->periodicidad]) ? $periodicidad_map[$row->periodicidad] : $row->periodicidad;
+				$banco_name = isset($banco_map[$row->banco]) ? $banco_map[$row->banco] : $row->banco;
 
 				$result[] = [
 					$row->id,
 					$row->contract_id,
-					$row->banco,
+					$banco_name,
 					$row->cuenta,
 					$row->rif,
 					$row->razon,
@@ -329,13 +341,23 @@ class Collections extends CI_Controller
 		}
 		echo '</Row>' . "\n";
 
+		// Mapa de bancos (id => nombre)
+		$bancos_api = $this->model_apis->banks();
+		$banco_map = [];
+		if (is_array($bancos_api)) {
+			foreach ($bancos_api as $b) {
+				$banco_map[$b['id']] = $b['description'];
+			}
+		}
+
 		// Datos
 		foreach ($data as $d) {
 			$freq = isset($periodicidad_map[$d->periodicidad]) ? $periodicidad_map[$d->periodicidad] : $d->periodicidad;
 			$st = isset($d->status) ? $d->status : '';
+			$banco_name = isset($banco_map[$d->banco]) ? $banco_map[$d->banco] : $d->banco;
 
 			$cells = [
-				$d->id, $d->contract_id, $d->banco, $d->cuenta, $d->rif, $d->razon,
+				$d->id, $d->contract_id, $banco_name, $d->cuenta, $d->rif, $d->razon,
 				$freq, $d->afiliado, $d->nropos, $d->monto, $d->cuota,
 				$d->fecha_mes_cobro, $st,
 				$d->c_fecha_generado, $d->c_fecha_conciliado, $d->c_fecha_procesado,
