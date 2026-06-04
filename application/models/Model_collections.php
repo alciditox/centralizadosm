@@ -69,10 +69,11 @@ class Model_collections extends CI_Model
 		}
 
 		if (!empty($status)) {
-			match ($status) {
-				'T' => $sql .= " AND pri.status IN ('A','R','P') ",
-				default => $sql .= " AND pri.status IN ('" . $status . "') ",
-			};
+			if ($status === 'T') {
+				$sql .= " AND pri.status IN ('A','R','P') ";
+			} else {
+				$sql .= " AND pri.status IN ('" . $status . "') ";
+			}
 		}
 
 		$sql .= " ORDER BY pri.id ASC ";
@@ -650,7 +651,7 @@ if(left(pri.termino,1) = 'D','Pago Diario', if(left(pri.termino,1) = 'M', 'Pago 
 		try {
 			$result = $this->db->query("SHOW VARIABLES LIKE 'local_infile'")->row();
 			return $result && mb_strtolower((string) $result->Value) === 'on';
-		} catch (Exception) {
+		} catch (Exception $e) {
 			return false;
 		}
 	}

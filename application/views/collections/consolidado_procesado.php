@@ -42,7 +42,7 @@
                                 <select class="form-control select2" id="banco" name="banco">
                                     <option value="">Todos</option>
                                     <?php foreach ($bancos as $b) { ?>
-                                        <option value="<?= $b->id ?>"><?= $b->id ?> - <?= $b->description ?></option>
+                                        <option value="<?= $b['id'] ?>"><?= $b['id'] ?> - <?= $b['description'] ?></option>
                                     <?php } ?>
                                 </select>
                             </div>

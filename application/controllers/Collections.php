@@ -188,7 +188,7 @@ class Collections extends CI_Controller
 
 	public function consolidado_procesado()
 	{
-		$data['bancos'] = $this->model_invoices->banks();
+		$data['bancos'] = $this->model_apis->banks();
 		$data['main_content'] = 'collections/consolidado_procesado.php';
 		$this->load->view('layout/template', $data);
 	}
