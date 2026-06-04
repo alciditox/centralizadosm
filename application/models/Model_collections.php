@@ -800,17 +800,19 @@ if(left(pri.termino,1) = 'D','Pago Diario', if(left(pri.termino,1) = 'M', 'Pago 
 		3  => 'i.cuenta',
 		4  => 'i.rif',
 		5  => 'i.razon',
-		6  => 'i.afiliado',
-		7  => 'i.periodicidad',
+		6  => 'i.periodicidad',
+		7  => 'i.afiliado',
 		8  => 'i.nropos',
-		9  => 'i.status',
-		10 => 'c.fecha_generado',
-		11 => 'c.fecha_conciliado',
-		12 => 'c.fecha_procesado',
-		13 => 'c.tasa',
-		14 => 'c.monto',
-		15 => 'c.usd',
-		16 => 'c.nropos',
+		9  => 'i.monto',
+		10 => 'i.cuota',
+		11 => 'i.fecha_mes_cobro',
+		12 => 'i.status',
+		13 => 'c.fecha_generado',
+		14 => 'c.fecha_conciliado',
+		15 => 'c.fecha_procesado',
+		16 => 'c.tasa',
+		17 => 'c.monto',
+		18 => 'c.usd',
 	];
 
 	/**
@@ -858,14 +860,14 @@ if(left(pri.termino,1) = 'D','Pago Diario', if(left(pri.termino,1) = 'M', 'Pago 
 	{
 		$this->db->select('
 			i.id, i.contract_id, i.banco, i.cuenta, i.rif, i.razon,
-			i.afiliado, i.periodicidad, i.nropos, i.status,
+			i.periodicidad, i.afiliado, i.nropos, i.monto, i.cuota,
+			i.fecha_mes_cobro, i.status,
 			c.fecha_generado  AS c_fecha_generado,
 			c.fecha_conciliado AS c_fecha_conciliado,
 			c.fecha_procesado  AS c_fecha_procesado,
 			c.tasa  AS c_tasa,
 			c.monto AS c_monto,
-			c.usd   AS c_usd,
-			c.nropos AS c_nropos
+			c.usd   AS c_usd
 		');
 
 		$this->_cp_apply_filters($postData);
@@ -930,14 +932,14 @@ if(left(pri.termino,1) = 'D','Pago Diario', if(left(pri.termino,1) = 'M', 'Pago 
 	{
 		$this->db->select('
 			i.id, i.contract_id, i.banco, i.cuenta, i.rif, i.razon,
-			i.afiliado, i.periodicidad, i.nropos, i.status,
+			i.periodicidad, i.afiliado, i.nropos, i.monto, i.cuota,
+			i.fecha_mes_cobro, i.status,
 			c.fecha_generado  AS c_fecha_generado,
 			c.fecha_conciliado AS c_fecha_conciliado,
 			c.fecha_procesado  AS c_fecha_procesado,
 			c.tasa  AS c_tasa,
 			c.monto AS c_monto,
-			c.usd   AS c_usd,
-			c.nropos AS c_nropos
+			c.usd   AS c_usd
 		');
 
 		$this->_cp_apply_filters($postData, false);

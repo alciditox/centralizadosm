@@ -1,6 +1,11 @@
 <?php
 defined('BASEPATH') or exit('No direct script access allowed');
 
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
+use PhpOffice\PhpSpreadsheet\Style\Alignment;
+
 class Collections extends CI_Controller
 {
 
@@ -228,9 +233,12 @@ class Collections extends CI_Controller
 					$row->cuenta,
 					$row->rif,
 					$row->razon,
-					$row->afiliado,
 					$freq,
+					$row->afiliado,
 					$row->nropos,
+					$row->monto,
+					$row->cuota,
+					$row->fecha_mes_cobro,
 					'<span class="badge ' . $badge_class . '">' . $st . '</span>',
 					$row->c_fecha_generado,
 					$row->c_fecha_conciliado,
@@ -238,7 +246,6 @@ class Collections extends CI_Controller
 					$row->c_tasa,
 					$row->c_monto,
 					$row->c_usd,
-					$row->c_nropos,
 				];
 			}
 
@@ -260,11 +267,17 @@ class Collections extends CI_Controller
 
 	public function export_consolidado_procesado()
 	{
-		ini_set('memory_limit', '-1');
-		ini_set('max_execution_time', '0');
-		set_time_limit(0);
+		ini_set('memory_limit', '512M');
+		ini_set('max_execution_time', '300');
+		set_time_limit(300);
 
 		$postData = $this->input->get();
+
+		if (empty($postData['fecha_desde']) && empty($postData['fecha_hasta']) && empty($postData['banco']) && empty($postData['status'])) {
+			echo "Debe seleccionar al menos un filtro para exportar.";
+			return;
+		}
+
 		$data = $this->model_collections->get_consolidado_procesado_all($postData);
 
 		$periodicidad_map = [
@@ -272,66 +285,80 @@ class Collections extends CI_Controller
 			'S' => 'Semanal', 'D' => 'Diario',
 		];
 
-		$spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
-		$sheet = $spreadsheet->getActiveSheet();
-		$sheet->setTitle("Consolidado Procesado");
-
-		$headers = [
-			'A' => 'Nro Cobro', 'B' => 'Contrato', 'C' => 'Banco', 'D' => 'Cuenta',
-			'E' => 'RIF', 'F' => 'Razon', 'G' => 'Afiliado', 'H' => 'Frecuencia',
-			'I' => 'Nro POS', 'J' => 'Status', 'K' => 'Fecha Generado',
-			'L' => 'Fecha Conciliado', 'M' => 'Fecha Procesado',
-			'N' => 'Tasa', 'O' => 'Monto', 'P' => 'USD', 'Q' => 'Nro POS (Col)',
-		];
-
-		$styleArray = [
-			'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
-			'fill' => [
-				'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
-				'startColor' => ['argb' => '1C235A'],
-			],
-		];
-
-		foreach ($headers as $col => $name) {
-			$sheet->setCellValue("{$col}1", $name);
-			$sheet->getStyle("{$col}1")->applyFromArray($styleArray);
-			$sheet->getColumnDimension($col)->setWidth(18);
-		}
-
-		$row = 2;
-		foreach ($data as $d) {
-			$freq = isset($periodicidad_map[$d->periodicidad]) ? $periodicidad_map[$d->periodicidad] : $d->periodicidad;
-			$sheet->setCellValue("A{$row}", $d->id);
-			$sheet->setCellValue("B{$row}", $d->contract_id);
-			$sheet->setCellValue("C{$row}", $d->banco);
-			$sheet->setCellValue("D{$row}", $d->cuenta);
-			$sheet->setCellValue("E{$row}", $d->rif);
-			$sheet->setCellValue("F{$row}", $d->razon);
-			$sheet->setCellValue("G{$row}", $d->afiliado);
-			$sheet->setCellValue("H{$row}", $freq);
-			$sheet->setCellValue("I{$row}", $d->nropos);
-			$sheet->setCellValue("J{$row}", $d->status);
-			$sheet->setCellValue("K{$row}", $d->c_fecha_generado);
-			$sheet->setCellValue("L{$row}", $d->c_fecha_conciliado);
-			$sheet->setCellValue("M{$row}", $d->c_fecha_procesado);
-			$sheet->setCellValue("N{$row}", $d->c_tasa);
-			$sheet->setCellValue("O{$row}", $d->c_monto);
-			$sheet->setCellValue("P{$row}", $d->c_usd);
-			$sheet->setCellValue("Q{$row}", $d->c_nropos);
-			$row++;
-		}
-
-		$archivo = "Consolidado_Pagos_Procesados_" . date('Y-m-d') . ".xlsx";
-		header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+		$archivo = "Consolidado_Pagos_Procesados_" . date('Y-m-d') . ".xls";
+		header('Content-Type: application/vnd.ms-excel');
 		header('Content-Disposition: attachment;filename="' . $archivo . '"');
 		header('Cache-Control: max-age=0');
 
-		$writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
-		ob_end_clean();
-		$writer->save('php://output');
+		// Excel XML (SpreadsheetML) con estilos
+		echo '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
+		echo '<?mso-application progid="Excel.Sheet"?>' . "\n";
+		echo '<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+			xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">' . "\n";
+
+		// Estilos
+		echo '<Styles>
+			<Style ss:ID="Default"><Alignment ss:Vertical="Center"/></Style>
+			<Style ss:ID="header">
+				<Font ss:Bold="1" ss:Color="#FFFFFF" ss:Size="10"/>
+				<Interior ss:Color="#1C235A" ss:Pattern="Solid"/>
+				<Alignment ss:Horizontal="Center" ss:Vertical="Center"/>
+			</Style>
+		</Styles>' . "\n";
+
+		echo '<Worksheet ss:Name="Consolidado Procesado">' . "\n";
+		echo '<Table>' . "\n";
+
+		// Anchos de columna
+		$widths = [60,60,40,100,80,150,70,70,50,60,60,80,60,80,80,80,50,70,50];
+		foreach ($widths as $w) {
+			echo '<Column ss:Width="' . $w . '"/>' . "\n";
+		}
+
+		// Header
+		$headers = [
+			'Nro Cobro','Contrato','Banco','Cuenta','RIF','Razon',
+			'Frecuencia','Afiliado','Nro POS','Monto','Cuota',
+			'Fecha Mes Cobro','Status',
+			'Fecha Generado','Fecha Conciliado','Fecha Procesado',
+			'Tasa','Monto (Col)','USD'
+		];
+		echo '<Row ss:StyleID="header">' . "\n";
+		foreach ($headers as $h) {
+			echo '<Cell><Data ss:Type="String">' . htmlspecialchars($h) . '</Data></Cell>' . "\n";
+		}
+		echo '</Row>' . "\n";
+
+		// Datos
+		foreach ($data as $d) {
+			$freq = isset($periodicidad_map[$d->periodicidad]) ? $periodicidad_map[$d->periodicidad] : $d->periodicidad;
+			$st = isset($d->status) ? $d->status : '';
+
+			$cells = [
+				$d->id, $d->contract_id, $d->banco, $d->cuenta, $d->rif, $d->razon,
+				$freq, $d->afiliado, $d->nropos, $d->monto, $d->cuota,
+				$d->fecha_mes_cobro, $st,
+				$d->c_fecha_generado, $d->c_fecha_conciliado, $d->c_fecha_procesado,
+				$d->c_tasa, $d->c_monto, $d->c_usd
+			];
+
+			echo '<Row>' . "\n";
+			foreach ($cells as $val) {
+				$type = is_numeric($val) ? 'Number' : 'String';
+				echo '<Cell><Data ss:Type="' . $type . '">' . htmlspecialchars((string)$val) . '</Data></Cell>' . "\n";
+			}
+			echo '</Row>' . "\n";
+
+			// Flush cada 500 filas para liberar buffer
+			if (ob_get_level() > 0) ob_flush();
+			flush();
+		}
+
+		echo '</Table>' . "\n";
+		echo '</Worksheet>' . "\n";
+		echo '</Workbook>';
 		exit;
 	}
-
 	private function conciliar_bank($postData)
 	{
 		$this->db->trans_begin();

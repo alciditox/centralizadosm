@@ -96,17 +96,19 @@
                                     <th>Cuenta</th>
                                     <th>RIF</th>
                                     <th>Razón</th>
-                                    <th>Afiliado</th>
                                     <th>Frecuencia</th>
+                                    <th>Afiliado</th>
                                     <th>Nro POS</th>
+                                    <th>Monto</th>
+                                    <th>Cuota</th>
+                                    <th>F. Mes Cobro</th>
                                     <th>Status</th>
                                     <th>F. Generado</th>
                                     <th>F. Conciliado</th>
                                     <th>F. Procesado</th>
                                     <th>Tasa</th>
-                                    <th>Monto</th>
+                                    <th>Monto (Col)</th>
                                     <th>USD</th>
-                                    <th>Nro POS (Col)</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -194,8 +196,9 @@
                         }
                     },
                     "columnDefs": [
-                        { "targets": [10, 11, 12], "orderable": true }
+                        { "targets": [13, 14, 15], "orderable": true }
                     ],
+                    "scrollX": true,
                     "responsive": true,
                     "pageLength": 25,
                     "language": {
